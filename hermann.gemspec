@@ -1,10 +1,10 @@
 
 SPEC = Gem::Specification.new do |s|
   s.name               = "hermann"
-  s.version            = "0.0.19"
+  s.version            = "0.0.20"
   s.default_executable = "hermann"
 
-  s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
+  # s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Stan Campbell"]
   s.date = %q{2014-05-29}
   s.description = %q{Ruby gem wrapper for a C based Kafka Consumer}

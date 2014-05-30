@@ -6,9 +6,9 @@
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$" />
-    <orderEntry type="jdk" jdkName="rbenv: 2.1.1" jdkType="RUBY_SDK" />
+    <orderEntry type="jdk" jdkName="rbenv: 1.8.7-p375" jdkType="RUBY_SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" scope="PROVIDED" name="bundler (v1.6.2, rbenv: 2.1.1) [gem]" level="application" />
+    <orderEntry type="library" scope="PROVIDED" name="bundler (v1.6.2, rbenv: 1.8.7-p375) [gem]" level="application" />
   </component>
 </module>
 
