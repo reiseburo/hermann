@@ -89,6 +89,16 @@ static void msg_consume (rd_kafka_message_t *rkmessage,
 	else
 		printf("%.*s\n",
 		       (int)rkmessage->len, (char *)rkmessage->payload);
+
+    // Yield the data to the Consumer's block
+	if(rb_block_given_p()) {
+	    fprintf(stderr, "Yield a value to block\n");
+	    VALUE value = rb_str_new((char *)rkmessage->payload, rkmessage->len);
+	    fprintf(stderr, "About to call yield\n");
+	    rb_yield(value);
+	} else {
+	    fprintf(stderr, "No block given\n");
+	}
 }
 
 static void sig_usr1 (int sig) {
