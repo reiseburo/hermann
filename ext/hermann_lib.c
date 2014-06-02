@@ -274,10 +274,10 @@ static VALUE push(VALUE c, VALUE message) {
 	topic_conf = rd_kafka_topic_conf_new();
 	fprintf(stderr, "Topic configuration created\n");
 
-    /* This will need to be adapted to maintain the state through multiple invocations. */
+    /* todo: This will need to be adapted to maintain the state through multiple invocations. */
     char buf[2048];
-    /* todo: copy the actual ruby message */
-    strcpy(buf, "RUDECHILDREN");
+    char *msg = StringValueCStr(message);
+    strcpy(buf, msg);
 
 	/* Set up a message delivery report callback.
      * It will be called once for each message, either on successful
