@@ -40,4 +40,8 @@ messages.each {
     |msg| p.push(msg)
 }
 
+## Questions?
+
+Stan Campbell can be reached at stan.campbell3 at( @ ) gmail.com
+
 
