@@ -1,5 +1,7 @@
 // Hermann.c
 
+/* Much of the librdkafka library calls were lifted from rdkafka_example.c */
+
 #include "hermann_lib.h"
 
 /**
@@ -122,6 +124,10 @@ static void logger (const rd_kafka_t *rk, int level,
 		level, fac, rd_kafka_name(rk), buf);
 }
 
+// Main entry point for Producer behavior
+void actAsProducer(char* topic) {
+}
+
 // Main entry point for Consumer behavior
 void actAsConsumer(char* topic) {
 
@@ -219,11 +225,14 @@ void actAsConsumer(char* topic) {
 
     rd_kafka_destroy(rk);
 
+    /* todo: may or may not be necessary depending on how underlying threads are handled */
 	/* Let background threads clean up and terminate cleanly. */
 	rd_kafka_wait_destroyed(2000);
 }
 
 // Ruby gem extensions
+
+/* Hermann::Consumer.consume */
 static VALUE consume(VALUE c, VALUE topicValue) {
     fprintf(stderr, "Called consume with one argument\n");
 
@@ -236,11 +245,125 @@ static VALUE consume(VALUE c, VALUE topicValue) {
     return Qnil;
 }
 
+/* Hermann::Producer.push */
+static VALUE push(VALUE c, VALUE message) {
+
+    /* todo: topic should be configured when the instance is created */
+    char* topic = "lms_messages";
+
+    /* Kafka configuration */
+    rd_kafka_topic_t *rkt;
+    char *brokers = "localhost:9092";
+    char mode = 'C';
+    int partition = 0; // todo: handle proper partitioning
+    int opt;
+    rd_kafka_conf_t *conf;
+   	rd_kafka_topic_conf_t *topic_conf;
+   	char errstr[512];
+   	const char *debug = NULL;
+   	int64_t start_offset = 0;
+   	int do_conf_dump = 0;
+
+   	quiet = !isatty(STDIN_FILENO);
+
+    /* Kafka configuration */
+	conf = rd_kafka_conf_new();
+	fprintf(stderr, "Kafka configuration created\n");
+
+	/* Topic configuration */
+	topic_conf = rd_kafka_topic_conf_new();
+	fprintf(stderr, "Topic configuration created\n");
+
+    /* This will need to be adapted to maintain the state through multiple invocations. */
+    char buf[2048];
+    /* todo: copy the actual ruby message */
+    strcpy(buf, "RUDECHILDREN");
+
+	/* Set up a message delivery report callback.
+     * It will be called once for each message, either on successful
+     * delivery to broker, or upon failure to deliver to broker. */
+    rd_kafka_conf_set_dr_cb(conf, msg_delivered);
+
+    /* Create Kafka handle */
+    if (!(rk = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errstr, sizeof(errstr)))) {
+	    fprintf(stderr,
+		"%% Failed to create new producer: %s\n", errstr);
+        exit(1);
+	}
+
+    /* Set logger */
+	rd_kafka_set_logger(rk, logger);
+	rd_kafka_set_log_level(rk, LOG_DEBUG);
+
+    if(rd_kafka_brokers_add(rk, brokers) == 0) {
+			fprintf(stderr, "%% No valid brokers specified\n");
+			exit(1);
+	}
+
+	/* Create topic */
+	rkt = rd_kafka_topic_new(rk, topic, topic_conf);
+
+    /* todo: copy message into buf */
+
+    size_t len = strlen(buf);
+    if (buf[len-1] == '\n')
+        buf[--len] = '\0';
+
+    /* Send/Produce message. */
+	if (rd_kafka_produce(rkt, partition, RD_KAFKA_MSG_F_COPY,
+        /* Payload and length */
+		buf, len,
+		/* Optional key and its length */
+		NULL, 0,
+		/* Message opaque, provided in
+		* delivery report callback as
+		* msg_opaque. */
+		NULL) == -1) {
+
+	    fprintf(stderr, "%% Failed to produce to topic %s partition %i: %s\n",
+					rd_kafka_topic_name(rkt), partition,
+					rd_kafka_err2str(rd_kafka_errno2err(errno)));
+
+        /* Poll to handle delivery reports */
+		rd_kafka_poll(rk, 0);
+	 } else {
+	    fprintf(stderr, "%% Sent %zd bytes to topic %s partition %i\n", len, rd_kafka_topic_name(rkt), partition);
+	 }
+
+    /* Wait for messages to be delivered */
+    while (run && rd_kafka_outq_len(rk) > 0)
+        rd_kafka_poll(rk, 100);
+
+    /* Destroy the handle */
+    rd_kafka_destroy(rk);
+
+    /* todo: may or may not be necessary depending on how underlying threads are handled */
+    /* Let background threads clean up and terminate cleanly. */
+    rd_kafka_wait_destroyed(2000);
+}
+
+/* Hermann::Producer.batch { block } */
+static VALUE batch(VALUE c) {
+    /* todo: not implemented */
+}
+
 void Init_hermann_lib() {
 
+    /* Define the module */
     m_hermann = rb_define_module("Hermann");
 
+    /* Define the consumer class */
     VALUE c_consumer = rb_define_class_under(m_hermann, "Consumer", rb_cObject);
 
+    /* Consumer has method 'consume' */
     rb_define_method( c_consumer, "consume", consume, 1 );
+
+    /* Define the producer class */
+    VALUE c_producer = rb_define_class_under(m_hermann, "Producer", rb_cObject);
+
+    /* Producer.push */
+    rb_define_method( c_producer, "push", push, 1 );
+
+    /* Producer.batch { block } */
+    rb_define_method( c_producer, "consume", batch, 1 );
 }
