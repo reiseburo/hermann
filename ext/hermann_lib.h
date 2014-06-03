@@ -35,7 +35,6 @@ typedef struct HermannProducerConfig {
     rd_kafka_topic_t *rkt;
     char *brokers;
     int partition;
-    int opt;
     rd_kafka_topic_conf_t *topic_conf;
     char errstr[512];
     rd_kafka_conf_t *conf;
@@ -53,7 +52,6 @@ typedef struct HermannConsumerConfig {
     rd_kafka_topic_t *rkt;
     char *brokers;
     int partition;
-    int opt;
     rd_kafka_topic_conf_t *topic_conf;
     char errstr[512];
     rd_kafka_conf_t *conf;

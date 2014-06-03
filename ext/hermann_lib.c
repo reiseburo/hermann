@@ -142,35 +142,30 @@ void actAsProducer(char* topic) {
 }
 
 // Main entry point for Consumer behavior
-void actAsConsumer(char* topic) {
+void actAsConsumer(VALUE self) {
 
-    fprintf(stderr, "actAsConsumer for topic %s\n", topic);
+    HermannConsumerConfig* consumerConfig;
 
-    /* Kafka configuration */
-    rd_kafka_topic_t *rkt;
-    char *brokers = "localhost:9092";
-    char mode = 'C';
-    int partition = 0; // todo: handle proper partitioning
-    int opt;
-    rd_kafka_conf_t *conf;
-   	rd_kafka_topic_conf_t *topic_conf;
-   	char errstr[512];
-   	const char *debug = NULL;
-   	int64_t start_offset = 0;
-   	int do_conf_dump = 0;
+    Data_Get_Struct(self, HermannConsumerConfig, consumerConfig);
+
+    if(consumerConfig->topic==NULL) {
+            fprintf(stderr, "Topic is null!");
+            return;
+    }
+    fprintf(stderr, "actAsConsumer for topic %s\n", consumerConfig->topic);
 
    	quiet = !isatty(STDIN_FILENO);
 
     /* Kafka configuration */
-	conf = rd_kafka_conf_new();
+	consumerConfig->conf = rd_kafka_conf_new();
 	fprintf(stderr, "Kafka configuration created\n");
 
 	/* Topic configuration */
-	topic_conf = rd_kafka_topic_conf_new();
+	consumerConfig->topic_conf = rd_kafka_topic_conf_new();
 	fprintf(stderr, "Topic configuration created\n");
 
 	/* TODO: offset calculation */
-	start_offset = RD_KAFKA_OFFSET_END;
+	consumerConfig->start_offset = RD_KAFKA_OFFSET_END;
 
     signal(SIGINT, stop);
     signal(SIGUSR1, sig_usr1);
@@ -180,8 +175,9 @@ void actAsConsumer(char* topic) {
 
     fprintf(stderr, "Create a Kafka handle\n");
     /* Create Kafka handle */
-    if (!(rk = rd_kafka_new(RD_KAFKA_CONSUMER, conf, errstr, sizeof(errstr)))) {
-        fprintf(stderr, "%% Failed to create new consumer: %s\n", errstr);
+    if (!(rk = rd_kafka_new(RD_KAFKA_CONSUMER, consumerConfig->conf,
+        consumerConfig->errstr, sizeof(consumerConfig->errstr)))) {
+        fprintf(stderr, "%% Failed to create new consumer: %s\n", consumerConfig->errstr);
     	exit(1);
     }
 
@@ -193,18 +189,18 @@ void actAsConsumer(char* topic) {
 
     /* Add brokers */
     fprintf(stderr, "About to add brokers..");
-    if (rd_kafka_brokers_add(rk, brokers) == 0) {
+    if (rd_kafka_brokers_add(rk, consumerConfig->brokers) == 0) {
     fprintf(stderr, "%% No valid brokers specified\n");
     	exit(1);
     }
     fprintf(stderr, "Brokers added\n");
 
     /* Create topic */
-    rkt = rd_kafka_topic_new(rk, topic, topic_conf);
+    consumerConfig->rkt = rd_kafka_topic_new(rk, consumerConfig->topic, consumerConfig->topic_conf);
     fprintf(stderr, "Topic created\n");
 
     /* Start consuming */
-    if (rd_kafka_consume_start(rkt, partition, start_offset) == -1){
+    if (rd_kafka_consume_start(consumerConfig->rkt, consumerConfig->partition, consumerConfig->start_offset) == -1){
         fprintf(stderr, "%% Failed to start consuming: %s\n",
             rd_kafka_err2str(rd_kafka_errno2err(errno)));
         exit(1);
@@ -219,7 +215,7 @@ void actAsConsumer(char* topic) {
         /* Consume single message.
          * See rdkafka_performance.c for high speed
          * consuming of messages. */
-        rkmessage = rd_kafka_consume(rkt, partition, 1000);
+        rkmessage = rd_kafka_consume(consumerConfig->rkt, consumerConfig->partition, 1000);
         if (!rkmessage) /* timeout */
             continue;
 
@@ -232,9 +228,9 @@ void actAsConsumer(char* topic) {
     fprintf(stderr, "Run loop exited\n");
 
     /* Stop consuming */
-    rd_kafka_consume_stop(rkt, partition);
+    rd_kafka_consume_stop(consumerConfig->rkt, consumerConfig->partition);
 
-    rd_kafka_topic_destroy(rkt);
+    rd_kafka_topic_destroy(consumerConfig->rkt);
 
     rd_kafka_destroy(rk);
 
@@ -246,14 +242,10 @@ void actAsConsumer(char* topic) {
 // Ruby gem extensions
 
 /* Hermann::Consumer.consume */
-static VALUE consume(VALUE c, VALUE topicValue) {
-    fprintf(stderr, "Called consume with one argument\n");
+static VALUE consume(VALUE self) {
 
-    char* topic = StringValueCStr(topicValue);
-
-    fprintf(stderr, "Topic is: %s\n", topic);
-
-    actAsConsumer(topic);
+    fprintf(stderr, "Consume invoked\n");
+    actAsConsumer(self);
 
     return Qnil;
 }
@@ -269,7 +261,6 @@ static VALUE push(VALUE c, VALUE message) {
     char *brokers = "localhost:9092";
     char mode = 'C';
     int partition = 0; // todo: handle proper partitioning
-    int opt;
     rd_kafka_conf_t *conf;
    	rd_kafka_topic_conf_t *topic_conf;
    	char errstr[512];
@@ -381,13 +372,19 @@ static VALUE consumer_allocate(VALUE klass) {
 static VALUE consumer_initialize(VALUE self, VALUE topic) {
 
     HermannConsumerConfig* consumerConfig;
+    char* topicPtr;
 
     printf("consumer_initialize\n");
+
+    topicPtr = StringValuePtr(topic);
+    fprintf(stderr, "Topic is:%s\n", topicPtr);
 
     Data_Get_Struct(self, HermannConsumerConfig, consumerConfig);
 
     /* todo: actually initialize the configuration options */
-    consumerConfig->topic = "lms_messages";
+    consumerConfig->topic = topicPtr;
+    consumerConfig->brokers = "localhost:9092";
+    consumerConfig->partition = 0;
 
     printf("consumer_initialize_end\n");
 
@@ -433,7 +430,7 @@ void Init_hermann_lib() {
     /* Init Copy */
 
     /* Consumer has method 'consume' */
-    rb_define_method( c_consumer, "consume", consume, 1 );
+    rb_define_method( c_consumer, "consume", consume, 0 );
 
     /* ---- Define the producer class ---- */
     VALUE c_producer = rb_define_class_under(m_hermann, "Producer", rb_cObject);
