@@ -7,6 +7,9 @@ RbConfig::MAKEFILE_CONFIG['CC'] = ENV['CC'] if ENV['CC']
 LIBDIR      = RbConfig::CONFIG['libdir']
 INCLUDEDIR  = RbConfig::CONFIG['includedir']
 
+puts "Library Dir: #{LIBDIR}\n"
+puts "Include Dir: #{INCLUDEDIR}"
+
 HEADER_DIRS = [INCLUDEDIR]
 
 LIB_DIRS = [LIBDIR]

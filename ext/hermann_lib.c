@@ -5,6 +5,19 @@
 #include "hermann_lib.h"
 
 /**
+ * Utility functions
+ */
+
+// Allocate a new Producer Configuration struct
+HermannProducerConfig newProducerConfig() {
+
+}
+
+// Allocate a new Consumer Configuration struct
+HermannConsumerConfig newConsumerConfig() {
+}
+
+/**
  * Message delivery report callback.
  * Called once for each message.
  * See rdkafka.h for more information.
@@ -347,23 +360,87 @@ static VALUE batch(VALUE c) {
     /* todo: not implemented */
 }
 
+static void consumer_free(void * p) {
+    /* todo: not implemented */
+}
+
+static VALUE consumer_allocate(VALUE klass) {
+
+    VALUE obj;
+
+    printf("consumer_allocate\n");
+    HermannConsumerConfig* consumerConfig = ALLOC(HermannConsumerConfig);
+
+    obj = Data_Wrap_Struct(klass, 0, consumer_free, consumerConfig);
+
+    printf("consumer_allocate_end\n");
+
+    return obj;
+}
+
+static VALUE consumer_initialize(VALUE self, VALUE topic) {
+
+    HermannConsumerConfig* consumerConfig;
+
+    printf("consumer_initialize\n");
+
+    Data_Get_Struct(self, HermannConsumerConfig, consumerConfig);
+
+    /* todo: actually initialize the configuration options */
+    consumerConfig->topic = "lms_messages";
+
+    printf("consumer_initialize_end\n");
+
+    return self;
+}
+
+static VALUE consumer_init_copy(VALUE copy, VALUE orig) {
+    HermannConsumerConfig* orig_config;
+    HermannConsumerConfig* copy_config;
+
+    if(copy == orig) {
+        return copy;
+    }
+
+    if (TYPE(orig) != T_DATA || RDATA(orig)->dfree != (RUBY_DATA_FUNC)consumer_free) {
+        rb_raise(rb_eTypeError, "wrong argument type");
+    }
+
+    Data_Get_Struct(orig, HermannConsumerConfig, orig_config);
+    Data_Get_Struct(copy, HermannConsumerConfig, copy_config);
+
+    // Copy over the data from one struct to the other
+    MEMCPY(copy_config, orig_config, HermannConsumerConfig, 1);
+
+    return copy;
+}
+
 void Init_hermann_lib() {
 
     /* Define the module */
     m_hermann = rb_define_module("Hermann");
 
-    /* Define the consumer class */
+    /* ---- Define the consumer class ---- */
     VALUE c_consumer = rb_define_class_under(m_hermann, "Consumer", rb_cObject);
+
+    /* Allocate */
+    rb_define_alloc_func(c_consumer, consumer_allocate);
+
+    /* Initialize */
+    rb_define_method(c_consumer, "initialize", consumer_initialize, 1);
+    rb_define_method(c_consumer, "initialize_copy", consumer_init_copy, 1);
+
+    /* Init Copy */
 
     /* Consumer has method 'consume' */
     rb_define_method( c_consumer, "consume", consume, 1 );
 
-    /* Define the producer class */
+    /* ---- Define the producer class ---- */
     VALUE c_producer = rb_define_class_under(m_hermann, "Producer", rb_cObject);
 
     /* Producer.push */
     rb_define_method( c_producer, "push", push, 1 );
 
     /* Producer.batch { block } */
-    rb_define_method( c_producer, "consume", batch, 1 );
+    rb_define_method( c_producer, "batch", batch, 1 );
 }

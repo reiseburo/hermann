@@ -18,6 +18,8 @@ The current version sets up and tears down the Producer's connection to Kafka wi
 
 *intended API*
 
+require 'hermann'
+
 c = Hermann::Consumer.new( :topic => "device_actions", :brokerlist => "localhost:9092" )
 
 c.consume do {
@@ -32,6 +34,8 @@ c.consume("device_actions") do {
 }
 
 #### Producer
+
+require 'hermann'
 
 p = Hermann::Producer.new
 

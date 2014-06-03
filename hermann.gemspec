@@ -1,7 +1,7 @@
 
 SPEC = Gem::Specification.new do |s|
   s.name               = "hermann"
-  s.version            = "0.0.31"
+  s.version            = "32"
   s.default_executable = "hermann"
 
   s.authors = ["Stan Campbell"]

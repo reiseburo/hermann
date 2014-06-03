@@ -27,6 +27,41 @@ static 	enum {
 	OUTPUT_RAW,
 } output = OUTPUT_HEXDUMP;
 
+typedef struct HermannProducerConfig {
+
+    char* topic;
+
+    /* Kafka configuration */
+    rd_kafka_topic_t *rkt;
+    char *brokers;
+    int partition;
+    int opt;
+    rd_kafka_topic_conf_t *topic_conf;
+    char errstr[512];
+    rd_kafka_conf_t *conf;
+    const char *debug;
+    int64_t start_offset;
+    int do_conf_dump;
+
+} HermannProducerConfig;
+
+typedef struct HermannConsumerConfig {
+
+    char* topic;
+
+    /* Kafka configuration */
+    rd_kafka_topic_t *rkt;
+    char *brokers;
+    int partition;
+    int opt;
+    rd_kafka_topic_conf_t *topic_conf;
+    char errstr[512];
+    rd_kafka_conf_t *conf;
+    const char *debug;
+    int64_t start_offset;
+    int do_conf_dump;
+
+} HermannConsumerConfig;
 
 #endif
 
