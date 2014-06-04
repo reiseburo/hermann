@@ -251,22 +251,16 @@ static VALUE consume(VALUE self) {
 }
 
 /* Hermann::Producer.push */
-static VALUE push(VALUE c, VALUE message) {
+static VALUE push(VALUE self, VALUE message) {
 
-    /* todo: topic should be configured when the instance is created */
-    char* topic = "lms_messages";
+    HermannProducerConfig* producerConfig;
 
-    /* Kafka configuration */
-    rd_kafka_topic_t *rkt;
-    char *brokers = "localhost:9092";
-    char mode = 'C';
-    int partition = 0; // todo: handle proper partitioning
-    rd_kafka_conf_t *conf;
-   	rd_kafka_topic_conf_t *topic_conf;
-   	char errstr[512];
-   	const char *debug = NULL;
-   	int64_t start_offset = 0;
-   	int do_conf_dump = 0;
+    Data_Get_Struct(self, HermannProducerConfig, producerConfig);
+
+    if(producerConfig->topic==NULL) {
+        fprintf(stderr, "Topic is null!");
+        return;
+    }
 
    	quiet = !isatty(STDIN_FILENO);
 
@@ -412,6 +406,67 @@ static VALUE consumer_init_copy(VALUE copy, VALUE orig) {
     return copy;
 }
 
+static void producer_free(void * p) {
+    /* todo: not implemented */
+}
+
+static VALUE producer_allocate(VALUE klass) {
+
+    VALUE obj;
+
+    printf("producer_allocate\n");
+    HermannProducerConfig* producerConfig = ALLOC(HermannProducerConfig);
+
+    obj = Data_Wrap_Struct(klass, 0, producer_free, producerConfig);
+
+    printf("producer_allocate_end\n");
+
+    return obj;
+}
+
+static VALUE producer_initialize(VALUE self, VALUE topic) {
+
+    HermannProducerConfig* producerConfig;
+    char* topicPtr;
+
+    printf("producer_initialize\n");
+
+    topicPtr = StringValuePtr(topic);
+    fprintf(stderr, "Topic is:%s\n", topicPtr);
+
+    Data_Get_Struct(self, HermannProducerConfig, producerConfig);
+
+    /* todo: actually initialize the configuration options */
+    producerConfig->topic = topicPtr;
+    producerConfig->brokers = "localhost:9092";
+    producerConfig->partition = 0;
+
+    printf("producer_initialize_end\n");
+
+    return self;
+}
+
+static VALUE producer_init_copy(VALUE copy, VALUE orig) {
+    HermannProducerConfig* orig_config;
+    HermannProducerConfig* copy_config;
+
+    if(copy == orig) {
+        return copy;
+    }
+
+    if (TYPE(orig) != T_DATA || RDATA(orig)->dfree != (RUBY_DATA_FUNC)producer_free) {
+        rb_raise(rb_eTypeError, "wrong argument type");
+    }
+
+    Data_Get_Struct(orig, HermannProducerConfig, orig_config);
+    Data_Get_Struct(copy, HermannProducerConfig, copy_config);
+
+    // Copy over the data from one struct to the other
+    MEMCPY(copy_config, orig_config, HermannProducerConfig, 1);
+
+    return copy;
+}
+
 void Init_hermann_lib() {
 
     /* Define the module */
@@ -428,12 +483,23 @@ void Init_hermann_lib() {
     rb_define_method(c_consumer, "initialize_copy", consumer_init_copy, 1);
 
     /* Init Copy */
+    /* todo: init copy for consumer */
 
     /* Consumer has method 'consume' */
     rb_define_method( c_consumer, "consume", consume, 0 );
 
     /* ---- Define the producer class ---- */
     VALUE c_producer = rb_define_class_under(m_hermann, "Producer", rb_cObject);
+
+    /* Allocate */
+    rb_define_alloc_func(c_producer, producer_allocate);
+
+    /* Initialize */
+    rb_define_method(c_producer, "initialize", producer_initialize, 1);
+    rb_define_method(c_producer, "initialize_copy", producer_init_copy, 1);
+
+    /* Init Copy */
+    /* todo: init copy for consumer */
 
     /* Producer.push */
     rb_define_method( c_producer, "push", push, 1 );
