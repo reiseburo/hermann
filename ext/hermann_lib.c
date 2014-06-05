@@ -56,9 +56,12 @@ static void hexdump (FILE *fp, const char *name, const void *ptr, size_t len) {
 }
 
 static void msg_consume (rd_kafka_message_t *rkmessage,
-			 void *opaque, HermannInstanceConfig* cfg) {
+			 void *opaque) {
 
+    HermannInstanceConfig* cfg;
     uuid_string_t uuidStr;
+
+    cfg = (HermannInstanceConfig*)opaque;
 
     if(DEBUG) {
         uuid_unparse(cfg->uuid, uuidStr);
@@ -187,17 +190,13 @@ static VALUE consumer_consume(VALUE self) {
     while (consumerConfig->run) {
         rd_kafka_message_t *rkmessage;
 
-        /* Consume single message.
-         * See rdkafka_performance.c for high speed
-         * consuming of messages. */
-        rkmessage = rd_kafka_consume(consumerConfig->rkt, consumerConfig->partition, 1000);
-        if (!rkmessage) /* timeout */
-            continue;
+        if(rd_kafka_consume_callback(consumerConfig->rkt, consumerConfig->partition,
+        							      1000/*timeout*/,
+        							      msg_consume,
+        							      consumerConfig) < 0) {
+            fprintf(stderr, "%% Error: %s\n", rd_kafka_err2str( rd_kafka_errno2err(errno)));
+        }
 
-        msg_consume(rkmessage, NULL, consumerConfig);
-
-        /* Return message to rdkafka */
-        rd_kafka_message_destroy(rkmessage);
     }
 
     /* Stop consuming */
