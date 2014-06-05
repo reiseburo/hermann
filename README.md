@@ -28,16 +28,18 @@ c.consume do {
 
 *current API*
 
-c = Hermann::Consumer.new
-c.consume("device_actions") do {
-    |msg| puts("Received: #{msg}")
-}
+require 'hermann'
+
+c = Hermann::Consumer.new( "device_actions" )
+c.consume() do
+  |msg| puts("Received: #{msg}")
+end
 
 #### Producer
 
 require 'hermann'
 
-p = Hermann::Producer.new
+p = Hermann::Producer.new( "device_actions" )
 
 messages = [ "Locate", "Scream", "Wipe", "Degauss" ]
 messages.each {
