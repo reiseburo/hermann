@@ -283,13 +283,11 @@ static VALUE producer_push(VALUE self, VALUE message) {
 					rd_kafka_err2str(rd_kafka_errno2err(errno)));
 
         /* Poll to handle delivery reports */
-		rd_kafka_poll(producerConfig->rk, 0);
+		rd_kafka_poll(producerConfig->rk, 10);
 	}
 
-    /* Wait for messages to be delivered */
-    while (producerConfig->run && rd_kafka_outq_len(producerConfig->rk) > 0)
-        rd_kafka_poll(producerConfig->rk, 100);
-
+    /* Must poll to handle delivery reports */
+    rd_kafka_poll(producerConfig->rk, 0);
 }
 
 /** Hermann::Producer.close */
