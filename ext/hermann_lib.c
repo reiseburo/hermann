@@ -30,8 +30,6 @@ static void msg_delivered (rd_kafka_t *rk,
 	if (error_code)
 		fprintf(stderr, "%% Message delivery failed: %s\n",
 			rd_kafka_err2str(error_code));
-	else if (!quiet)
-		fprintf(stderr, "%% Message delivered (%zd bytes)\n", len);
 }
 
 static void hexdump (FILE *fp, const char *name, const void *ptr, size_t len) {
@@ -61,7 +59,7 @@ static void hexdump (FILE *fp, const char *name, const void *ptr, size_t len) {
 }
 
 static void msg_consume (rd_kafka_message_t *rkmessage,
-			 void *opaque) {
+			 void *opaque, HermannInstanceConfig* cfg) {
 	if (rkmessage->err) {
 		if (rkmessage->err == RD_KAFKA_RESP_ERR__PARTITION_EOF) {
 			fprintf(stderr,
@@ -70,8 +68,8 @@ static void msg_consume (rd_kafka_message_t *rkmessage,
 			       rd_kafka_topic_name(rkmessage->rkt),
 			       rkmessage->partition, rkmessage->offset);
 
-			if (exit_eof)
-				run = 0;
+			if (cfg->exit_eof)
+				cfg->run = 0;
 
 			return;
 		}
@@ -84,10 +82,6 @@ static void msg_consume (rd_kafka_message_t *rkmessage,
 		       rd_kafka_message_errstr(rkmessage));
 		return;
 	}
-
-	if (!quiet)
-		fprintf(stdout, "%% Message (offset %"PRId64", %zd bytes):\n",
-			rkmessage->offset, rkmessage->len);
 
 	if (rkmessage->key_len) {
 		if (output == OUTPUT_HEXDUMP)
@@ -116,12 +110,13 @@ static void msg_consume (rd_kafka_message_t *rkmessage,
 	}
 }
 
+// todo: these two signal callbacks need to drop the second argument and figure out a way to refer to the instance-associated configuration
 static void sig_usr1 (int sig, rd_kafka_t *rk) {
 	rd_kafka_dump(stdout, rk);
 }
 
-static void stop (int sig) {
-	run = 0;
+static void stop (int sig, HermannInstanceConfig* cfg) {
+	cfg->run = 0;
 	fclose(stdin); /* abort fgets() */
 }
 
@@ -154,7 +149,7 @@ void actAsConsumer(VALUE self) {
     }
     fprintf(stderr, "actAsConsumer for topic %s\n", consumerConfig->topic);
 
-   	quiet = !isatty(STDIN_FILENO);
+   	consumerConfig->quiet = !isatty(STDIN_FILENO);
 
     /* Kafka configuration */
 	consumerConfig->conf = rd_kafka_conf_new();
@@ -209,7 +204,7 @@ void actAsConsumer(VALUE self) {
     fprintf(stderr, "Consume started\n");
 
     /* Run loop */
-    while (run) {
+    while (consumerConfig->run) {
         rd_kafka_message_t *rkmessage;
 
         /* Consume single message.
@@ -219,7 +214,7 @@ void actAsConsumer(VALUE self) {
         if (!rkmessage) /* timeout */
             continue;
 
-        msg_consume(rkmessage, NULL);
+        msg_consume(rkmessage, NULL, consumerConfig);
 
         /* Return message to rdkafka */
         rd_kafka_message_destroy(rkmessage);
@@ -262,7 +257,7 @@ static VALUE push(VALUE self, VALUE message) {
         return;
     }
 
-   	quiet = !isatty(STDIN_FILENO);
+   	producerConfig->quiet = !isatty(STDIN_FILENO);
 
     /* Kafka configuration */
 	producerConfig->conf = rd_kafka_conf_new();
@@ -329,7 +324,7 @@ static VALUE push(VALUE self, VALUE message) {
 	 }
 
     /* Wait for messages to be delivered */
-    while (run && rd_kafka_outq_len(producerConfig->rk) > 0)
+    while (producerConfig->run && rd_kafka_outq_len(producerConfig->rk) > 0)
         rd_kafka_poll(producerConfig->rk, 100);
 
     /* Destroy the handle */
@@ -368,19 +363,15 @@ static VALUE consumer_initialize(VALUE self, VALUE topic) {
     HermannInstanceConfig* consumerConfig;
     char* topicPtr;
 
-    printf("consumer_initialize\n");
-
     topicPtr = StringValuePtr(topic);
-    fprintf(stderr, "Topic is:%s\n", topicPtr);
-
     Data_Get_Struct(self, HermannInstanceConfig, consumerConfig);
 
-    /* todo: actually initialize the configuration options */
     consumerConfig->topic = topicPtr;
     consumerConfig->brokers = "localhost:9092";
     consumerConfig->partition = 0;
-
-    printf("consumer_initialize_end\n");
+    consumerConfig->run = 1;
+    consumerConfig->exit_eof = 0;
+    consumerConfig->quiet = 0;
 
     return self;
 }
@@ -429,19 +420,15 @@ static VALUE producer_initialize(VALUE self, VALUE topic) {
     HermannInstanceConfig* producerConfig;
     char* topicPtr;
 
-    printf("producer_initialize\n");
-
     topicPtr = StringValuePtr(topic);
-    fprintf(stderr, "Topic is:%s\n", topicPtr);
-
     Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
 
-    /* todo: actually initialize the configuration options */
     producerConfig->topic = topicPtr;
     producerConfig->brokers = "localhost:9092";
     producerConfig->partition = 0;
-
-    printf("producer_initialize_end\n");
+    producerConfig->run = 1;
+    producerConfig->exit_eof = 0;
+    producerConfig->quiet = 0;
 
     return self;
 }

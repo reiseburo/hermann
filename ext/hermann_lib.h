@@ -17,10 +17,6 @@
 // Holds the defined Ruby module for Hermann
 static VALUE m_hermann;
 
-// From rdkafka_example.c
-static int run = 1;
-static int exit_eof = 0;
-static int quiet = 0;
 static 	enum {
 	OUTPUT_HEXDUMP,
 	OUTPUT_RAW,
@@ -41,6 +37,10 @@ typedef struct HermannInstanceConfig {
     const char *debug;
     int64_t start_offset;
     int do_conf_dump;
+
+    int run;
+    int exit_eof;
+    int quiet;
 } HermannInstanceConfig;
 
 #endif
