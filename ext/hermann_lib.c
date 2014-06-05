@@ -8,13 +8,10 @@
  * Utility functions
  */
 
-// Allocate a new Producer Configuration struct
-HermannInstanceConfig newProducerConfig() {
-
-}
-
-// Allocate a new Consumer Configuration struct
-HermannInstanceConfig newConsumerConfig() {
+void log_debug(char* msg) {
+    if(DEBUG) {
+        fprintf(stderr, "%s\n", msg);
+    }
 }
 
 /**
@@ -60,6 +57,14 @@ static void hexdump (FILE *fp, const char *name, const void *ptr, size_t len) {
 
 static void msg_consume (rd_kafka_message_t *rkmessage,
 			 void *opaque, HermannInstanceConfig* cfg) {
+
+    uuid_string_t uuidStr;
+
+    if(DEBUG) {
+        uuid_unparse(cfg->uuid, uuidStr);
+        fprintf(stderr, "Consumer key: %s\n", uuidStr);
+    }
+
 	if (rkmessage->err) {
 		if (rkmessage->err == RD_KAFKA_RESP_ERR__PARTITION_EOF) {
 			fprintf(stderr,
@@ -101,23 +106,11 @@ static void msg_consume (rd_kafka_message_t *rkmessage,
 
     // Yield the data to the Consumer's block
 	if(rb_block_given_p()) {
-	    fprintf(stderr, "Yield a value to block\n");
 	    VALUE value = rb_str_new((char *)rkmessage->payload, rkmessage->len);
-	    fprintf(stderr, "About to call yield\n");
 	    rb_yield(value);
 	} else {
-	    fprintf(stderr, "No block given\n");
+	    fprintf(stderr, "No block given\n"); // todo: should this be an error?
 	}
-}
-
-// todo: these two signal callbacks need to drop the second argument and figure out a way to refer to the instance-associated configuration
-static void sig_usr1 (int sig, rd_kafka_t *rk) {
-	rd_kafka_dump(stdout, rk);
-}
-
-static void stop (int sig, HermannInstanceConfig* cfg) {
-	cfg->run = 0;
-	fclose(stdin); /* abort fgets() */
 }
 
 /**
@@ -132,12 +125,43 @@ static void logger (const rd_kafka_t *rk, int level,
 		level, fac, rd_kafka_name(rk), buf);
 }
 
-// Main entry point for Producer behavior
-void actAsProducer(char* topic) {
+void consumer_init_kafka(HermannInstanceConfig* config) {
+
+    config->quiet = !isatty(STDIN_FILENO);
+
+    /* Kafka configuration */
+    config->conf = rd_kafka_conf_new();
+
+    /* Topic configuration */
+    config->topic_conf = rd_kafka_topic_conf_new();
+
+    /* Create Kafka handle */
+    if (!(config->rk = rd_kafka_new(RD_KAFKA_CONSUMER, config->conf,
+        config->errstr, sizeof(config->errstr)))) {
+        fprintf(stderr, "%% Failed to create new consumer: %s\n", config->errstr);
+        exit(1);
+    }
+
+    /* TODO: offset calculation */
+    config->start_offset = RD_KAFKA_OFFSET_END;
+
+    /* Add brokers */
+    if(rd_kafka_brokers_add(config->rk, config->brokers) == 0) {
+        fprintf(stderr, "%% No valid brokers specified\n");
+        exit(1);
+    }
+
+    /* Create topic */
+    config->rkt = rd_kafka_topic_new(config->rk, config->topic, config->topic_conf);
+
+    /* We're now initialized */
+    config->isInitialized = 1;
 }
 
-// Main entry point for Consumer behavior
-void actAsConsumer(VALUE self) {
+// Ruby gem extensions
+
+/* Hermann::Consumer.consume */
+static VALUE consumer_consume(VALUE self) {
 
     HermannInstanceConfig* consumerConfig;
 
@@ -147,52 +171,10 @@ void actAsConsumer(VALUE self) {
             fprintf(stderr, "Topic is null!");
             return;
     }
-    fprintf(stderr, "actAsConsumer for topic %s\n", consumerConfig->topic);
 
-   	consumerConfig->quiet = !isatty(STDIN_FILENO);
-
-    /* Kafka configuration */
-	consumerConfig->conf = rd_kafka_conf_new();
-	fprintf(stderr, "Kafka configuration created\n");
-
-	/* Topic configuration */
-	consumerConfig->topic_conf = rd_kafka_topic_conf_new();
-	fprintf(stderr, "Topic configuration created\n");
-
-	/* TODO: offset calculation */
-	consumerConfig->start_offset = RD_KAFKA_OFFSET_END;
-
-    signal(SIGINT, stop);
-    signal(SIGUSR1, sig_usr1);
-    fprintf(stderr, "Signals sent\n");
-
-    /* Consumer specific code */
-
-    fprintf(stderr, "Create a Kafka handle\n");
-    /* Create Kafka handle */
-    if (!(consumerConfig->rk = rd_kafka_new(RD_KAFKA_CONSUMER, consumerConfig->conf,
-        consumerConfig->errstr, sizeof(consumerConfig->errstr)))) {
-        fprintf(stderr, "%% Failed to create new consumer: %s\n", consumerConfig->errstr);
-    	exit(1);
+    if(!consumerConfig->isInitialized) {
+        consumer_init_kafka(consumerConfig);
     }
-
-    /* Set logger */
-    /*rd_kafka_set_logger(rk, logger);
-    fprintf(stderr, "Logger set\n");
-    rd_kafka_set_log_level(rk, LOG_DEBUG);
-    fprintf(stderr, "Loglevel configured\n");*/
-
-    /* Add brokers */
-    fprintf(stderr, "About to add brokers..");
-    if (rd_kafka_brokers_add(consumerConfig->rk, consumerConfig->brokers) == 0) {
-    fprintf(stderr, "%% No valid brokers specified\n");
-    	exit(1);
-    }
-    fprintf(stderr, "Brokers added\n");
-
-    /* Create topic */
-    consumerConfig->rkt = rd_kafka_topic_new(consumerConfig->rk, consumerConfig->topic, consumerConfig->topic_conf);
-    fprintf(stderr, "Topic created\n");
 
     /* Start consuming */
     if (rd_kafka_consume_start(consumerConfig->rkt, consumerConfig->partition, consumerConfig->start_offset) == -1){
@@ -200,8 +182,6 @@ void actAsConsumer(VALUE self) {
             rd_kafka_err2str(rd_kafka_errno2err(errno)));
         exit(1);
     }
-
-    fprintf(stderr, "Consume started\n");
 
     /* Run loop */
     while (consumerConfig->run) {
@@ -220,35 +200,55 @@ void actAsConsumer(VALUE self) {
         rd_kafka_message_destroy(rkmessage);
     }
 
-    fprintf(stderr, "Run loop exited\n");
-
     /* Stop consuming */
     rd_kafka_consume_stop(consumerConfig->rkt, consumerConfig->partition);
-
-    rd_kafka_topic_destroy(consumerConfig->rkt);
-
-    rd_kafka_destroy(consumerConfig->rk);
-
-    /* todo: may or may not be necessary depending on how underlying threads are handled */
-	/* Let background threads clean up and terminate cleanly. */
-	rd_kafka_wait_destroyed(2000);
-}
-
-// Ruby gem extensions
-
-/* Hermann::Consumer.consume */
-static VALUE consume(VALUE self) {
-
-    fprintf(stderr, "Consume invoked\n");
-    actAsConsumer(self);
 
     return Qnil;
 }
 
-/* Hermann::Producer.push */
-static VALUE push(VALUE self, VALUE message) {
+void producer_init_kafka(HermannInstanceConfig* config) {
+
+    config->quiet = !isatty(STDIN_FILENO);
+
+    /* Kafka configuration */
+    config->conf = rd_kafka_conf_new();
+
+    /* Topic configuration */
+    config->topic_conf = rd_kafka_topic_conf_new();
+
+    /* Set up a message delivery report callback.
+     * It will be called once for each message, either on successful
+     * delivery to broker, or upon failure to deliver to broker. */
+    rd_kafka_conf_set_dr_cb(config->conf, msg_delivered);
+
+    /* Create Kafka handle */
+    if (!(config->rk = rd_kafka_new(RD_KAFKA_PRODUCER, config->conf, config->errstr, sizeof(config->errstr)))) {
+        fprintf(stderr,
+        "%% Failed to create new producer: %s\n", config->errstr);
+        exit(1);
+    }
+
+    /* Set logger */
+    rd_kafka_set_logger(config->rk, logger);
+    rd_kafka_set_log_level(config->rk, LOG_DEBUG);
+
+    if(rd_kafka_brokers_add(config->rk, config->brokers) == 0) {
+        fprintf(stderr, "%% No valid brokers specified\n");
+        exit(1);
+    }
+
+    /* Create topic */
+    config->rkt = rd_kafka_topic_new(config->rk, config->topic, config->topic_conf);
+
+    /* We're now initialized */
+    config->isInitialized = 1;
+}
+
+/* Hermann::Producer.push(msg) */
+static VALUE producer_push(VALUE self, VALUE message) {
 
     HermannInstanceConfig* producerConfig;
+    char buf[2048];
 
     Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
 
@@ -257,46 +257,12 @@ static VALUE push(VALUE self, VALUE message) {
         return;
     }
 
-   	producerConfig->quiet = !isatty(STDIN_FILENO);
+   	if(!producerConfig->isInitialized) {
+   	    producer_init_kafka(producerConfig);
+    }
 
-    /* Kafka configuration */
-	producerConfig->conf = rd_kafka_conf_new();
-	fprintf(stderr, "Kafka configuration created\n");
-
-	/* Topic configuration */
-	producerConfig->topic_conf = rd_kafka_topic_conf_new();
-	fprintf(stderr, "Topic configuration created\n");
-
-    /* todo: This will need to be adapted to maintain the state through multiple invocations. */
-    char buf[2048];
     char *msg = StringValueCStr(message);
     strcpy(buf, msg);
-
-	/* Set up a message delivery report callback.
-     * It will be called once for each message, either on successful
-     * delivery to broker, or upon failure to deliver to broker. */
-    rd_kafka_conf_set_dr_cb(producerConfig->conf, msg_delivered);
-
-    /* Create Kafka handle */
-    if (!(producerConfig->rk = rd_kafka_new(RD_KAFKA_PRODUCER, producerConfig->conf, producerConfig->errstr, sizeof(producerConfig->errstr)))) {
-	    fprintf(stderr,
-		"%% Failed to create new producer: %s\n", producerConfig->errstr);
-        exit(1);
-	}
-
-    /* Set logger */
-	rd_kafka_set_logger(producerConfig->rk, logger);
-	rd_kafka_set_log_level(producerConfig->rk, LOG_DEBUG);
-
-    if(rd_kafka_brokers_add(producerConfig->rk, producerConfig->brokers) == 0) {
-			fprintf(stderr, "%% No valid brokers specified\n");
-			exit(1);
-	}
-
-	/* Create topic */
-	producerConfig->rkt = rd_kafka_topic_new(producerConfig->rk, producerConfig->topic, producerConfig->topic_conf);
-
-    /* todo: copy message into buf */
 
     size_t len = strlen(buf);
     if (buf[len-1] == '\n')
@@ -319,41 +285,52 @@ static VALUE push(VALUE self, VALUE message) {
 
         /* Poll to handle delivery reports */
 		rd_kafka_poll(producerConfig->rk, 0);
-	 } else {
-	    fprintf(stderr, "%% Sent %zd bytes to topic %s partition %i\n", len, rd_kafka_topic_name(producerConfig->rkt), producerConfig->partition);
-	 }
+	}
 
     /* Wait for messages to be delivered */
     while (producerConfig->run && rd_kafka_outq_len(producerConfig->rk) > 0)
         rd_kafka_poll(producerConfig->rk, 100);
 
-    /* Destroy the handle */
-    rd_kafka_destroy(producerConfig->rk);
+}
 
-    /* todo: may or may not be necessary depending on how underlying threads are handled */
-    /* Let background threads clean up and terminate cleanly. */
-    rd_kafka_wait_destroyed(2000);
+/** Hermann::Producer.close */
+static VALUE producer_close(VALUE self) {
+
+   HermannInstanceConfig* producerConfig;
+
+   Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
+
+   /* Destroy the handle */
+   rd_kafka_destroy(producerConfig->rk);
+
+   /* Let background threads clean up and terminate cleanly. */
+   rd_kafka_wait_destroyed(2000);
 }
 
 /* Hermann::Producer.batch { block } */
-static VALUE batch(VALUE c) {
+static VALUE producer_batch(VALUE c) {
     /* todo: not implemented */
 }
 
 static void consumer_free(void * p) {
-    /* todo: not implemented */
+    // the p *should* contain a pointer to the consumerConfig which also must be freed
+    // rd_kafka_topic_destroy(consumerConfig->rkt);
+
+    // rd_kafka_destroy(consumerConfig->rk);
+
+    /* todo: may or may not be necessary depending on how underlying threads are handled */
+    /* Let background threads clean up and terminate cleanly. */
+    // rd_kafka_wait_destroyed(2000);
 }
 
 static VALUE consumer_allocate(VALUE klass) {
 
     VALUE obj;
 
-    printf("consumer_allocate\n");
     HermannInstanceConfig* consumerConfig = ALLOC(HermannInstanceConfig);
-
     obj = Data_Wrap_Struct(klass, 0, consumer_free, consumerConfig);
 
-    printf("consumer_allocate_end\n");
+    log_debug("Consumer allocated");
 
     return obj;
 }
@@ -366,12 +343,15 @@ static VALUE consumer_initialize(VALUE self, VALUE topic) {
     topicPtr = StringValuePtr(topic);
     Data_Get_Struct(self, HermannInstanceConfig, consumerConfig);
 
+    uuid_generate(consumerConfig->uuid);
     consumerConfig->topic = topicPtr;
     consumerConfig->brokers = "localhost:9092";
     consumerConfig->partition = 0;
     consumerConfig->run = 1;
     consumerConfig->exit_eof = 0;
     consumerConfig->quiet = 0;
+
+    log_debug("Consumer initialized");
 
     return self;
 }
@@ -399,18 +379,19 @@ static VALUE consumer_init_copy(VALUE copy, VALUE orig) {
 
 static void producer_free(void * p) {
     /* todo: not implemented */
+    /* Destroy the handle */
+    // Handle is in the config, the config is probably in that p pointer
+    // rd_kafka_destroy(producerConfig->rk);
 }
 
 static VALUE producer_allocate(VALUE klass) {
 
     VALUE obj;
 
-    printf("producer_allocate\n");
     HermannInstanceConfig* producerConfig = ALLOC(HermannInstanceConfig);
-
     obj = Data_Wrap_Struct(klass, 0, producer_free, producerConfig);
 
-    printf("producer_allocate_end\n");
+    log_debug("Producer allocated");
 
     return obj;
 }
@@ -423,12 +404,15 @@ static VALUE producer_initialize(VALUE self, VALUE topic) {
     topicPtr = StringValuePtr(topic);
     Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
 
+    uuid_generate(producerConfig->uuid);
     producerConfig->topic = topicPtr;
     producerConfig->brokers = "localhost:9092";
     producerConfig->partition = 0;
     producerConfig->run = 1;
     producerConfig->exit_eof = 0;
     producerConfig->quiet = 0;
+
+    log_debug("Producer initialized");
 
     return self;
 }
@@ -469,11 +453,8 @@ void Init_hermann_lib() {
     rb_define_method(c_consumer, "initialize", consumer_initialize, 1);
     rb_define_method(c_consumer, "initialize_copy", consumer_init_copy, 1);
 
-    /* Init Copy */
-    /* todo: init copy for consumer */
-
     /* Consumer has method 'consume' */
-    rb_define_method( c_consumer, "consume", consume, 0 );
+    rb_define_method( c_consumer, "consume", consumer_consume, 0 );
 
     /* ---- Define the producer class ---- */
     VALUE c_producer = rb_define_class_under(m_hermann, "Producer", rb_cObject);
@@ -485,12 +466,12 @@ void Init_hermann_lib() {
     rb_define_method(c_producer, "initialize", producer_initialize, 1);
     rb_define_method(c_producer, "initialize_copy", producer_init_copy, 1);
 
-    /* Init Copy */
-    /* todo: init copy for consumer */
+    /* Producer.push(msg) */
+    rb_define_method( c_producer, "push", producer_push, 1 );
 
-    /* Producer.push */
-    rb_define_method( c_producer, "push", push, 1 );
+    /* Producer.batch(array) */
+    rb_define_method( c_producer, "batch", producer_batch, 1 );
 
-    /* Producer.batch { block } */
-    rb_define_method( c_producer, "batch", batch, 1 );
+    /* Producer.close() */
+    rb_define_method( c_producer, "close", producer_close, 0 );
 }

@@ -11,11 +11,14 @@
 #include <syslog.h>
 #include <sys/time.h>
 #include <errno.h>
+#include <uuid/uuid.h>
 
 #include <librdkafka/rdkafka.h>
 
 // Holds the defined Ruby module for Hermann
 static VALUE m_hermann;
+
+static int DEBUG = 1;
 
 static 	enum {
 	OUTPUT_HEXDUMP,
@@ -23,6 +26,9 @@ static 	enum {
 } output = OUTPUT_HEXDUMP;
 
 typedef struct HermannInstanceConfig {
+
+    /* Mostly for debugging purposes, a GUID for this instance */
+    uuid_t uuid;
 
     char* topic;
 
@@ -41,6 +47,9 @@ typedef struct HermannInstanceConfig {
     int run;
     int exit_eof;
     int quiet;
+
+    int isInitialized;
+
 } HermannInstanceConfig;
 
 #endif
