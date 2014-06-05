@@ -19,7 +19,6 @@ static VALUE m_hermann;
 
 // From rdkafka_example.c
 static int run = 1;
-static rd_kafka_t *rk; // todo: this is the instance of the Prod or Consumer, move into struct
 static int exit_eof = 0;
 static int quiet = 0;
 static 	enum {
@@ -32,6 +31,7 @@ typedef struct HermannInstanceConfig {
     char* topic;
 
     /* Kafka configuration */
+    rd_kafka_t *rk;
     rd_kafka_topic_t *rkt;
     char *brokers;
     int partition;
