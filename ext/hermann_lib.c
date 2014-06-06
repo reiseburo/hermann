@@ -59,14 +59,8 @@ static void msg_consume (rd_kafka_message_t *rkmessage,
 			 void *opaque) {
 
     HermannInstanceConfig* cfg;
-    uuid_string_t uuidStr;
 
     cfg = (HermannInstanceConfig*)opaque;
-
-    if(DEBUG) {
-        uuid_unparse(cfg->uuid, uuidStr);
-        fprintf(stderr, "Consumer key: %s\n", uuidStr);
-    }
 
 	if (rkmessage->err) {
 		if (rkmessage->err == RD_KAFKA_RESP_ERR__PARTITION_EOF) {
@@ -91,7 +85,7 @@ static void msg_consume (rd_kafka_message_t *rkmessage,
 		return;
 	}
 
-	if (rkmessage->key_len) {
+	if (DEBUG && rkmessage->key_len) {
 		if (output == OUTPUT_HEXDUMP)
 			hexdump(stdout, "Message Key",
 				rkmessage->key, rkmessage->key_len);
@@ -100,19 +94,21 @@ static void msg_consume (rd_kafka_message_t *rkmessage,
 			       (int)rkmessage->key_len, (char *)rkmessage->key);
 	}
 
-	if (output == OUTPUT_HEXDUMP)
-		hexdump(stdout, "Message Payload",
-			rkmessage->payload, rkmessage->len);
-	else
-		printf("%.*s\n",
-		       (int)rkmessage->len, (char *)rkmessage->payload);
+	if (output == OUTPUT_HEXDUMP) {
+		if(DEBUG)
+			hexdump(stdout, "Message Payload", rkmessage->payload, rkmessage->len);
+	} else {
+		if(DEBUG)
+			printf("%.*s\n", (int)rkmessage->len, (char *)rkmessage->payload);
+	}
 
     // Yield the data to the Consumer's block
 	if(rb_block_given_p()) {
 	    VALUE value = rb_str_new((char *)rkmessage->payload, rkmessage->len);
 	    rb_yield(value);
 	} else {
-	    fprintf(stderr, "No block given\n"); // todo: should this be an error?
+	    if(DEBUG)
+			fprintf(stderr, "No block given\n"); // todo: should this be an error?
 	}
 }
 
@@ -351,7 +347,6 @@ static VALUE consumer_initialize(VALUE self, VALUE topic) {
     topicPtr = StringValuePtr(topic);
     Data_Get_Struct(self, HermannInstanceConfig, consumerConfig);
 
-    uuid_generate(consumerConfig->uuid);
     consumerConfig->topic = topicPtr;
     consumerConfig->brokers = "localhost:9092";
     consumerConfig->partition = 0;
@@ -414,8 +409,7 @@ static VALUE producer_initialize(VALUE self, VALUE topic) {
 
     topicPtr = StringValuePtr(topic);
     Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
-
-    uuid_generate(producerConfig->uuid);
+	
     producerConfig->topic = topicPtr;
     producerConfig->brokers = "localhost:9092";
     producerConfig->partition = 0;
