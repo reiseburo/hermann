@@ -1,4 +1,30 @@
-// Hermann.c
+/*
+ * hermann_lib.c - Ruby wrapper for the librdkafka library
+ *
+ * Copyright (c) 2014 Stan Campbell
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
 /* Much of the librdkafka library calls were lifted from rdkafka_example.c */
 
@@ -8,6 +34,12 @@
  * Utility functions
  */
 
+
+/**
+ * Convenience function
+ *
+ * @param msg   char*       the string to be logged under debugging.
+ */
 void log_debug(char* msg) {
     if(DEBUG) {
         fprintf(stderr, "%s\n", msg);
@@ -17,7 +49,13 @@ void log_debug(char* msg) {
 /**
  * Message delivery report callback.
  * Called once for each message.
- * See rdkafka.h for more information.
+ *
+ * @param rk    rd_kafka_t* instance of producer or consumer
+ * @param payload   void*   the payload of the message
+ * @param len   size_t  the length of the payload in bytes
+ * @param error_code    int
+ * @param opaque    void*   optional context
+ * @param msg_opaque    void*   it's opaque
  */
 static void msg_delivered (rd_kafka_t *rk,
 			   void *payload, size_t len,
@@ -29,6 +67,46 @@ static void msg_delivered (rd_kafka_t *rk,
 			rd_kafka_err2str(error_code));
 }
 
+/**
+ * Producer partitioner callback.
+ * Used to determine the target partition within a topic for production.
+ *
+ * Returns an integer partition number or RD_KAFKA_PARTITION_UA if no
+ * available partition could be determined.
+ *
+ * @param   rkt rd_kafka_topic_t*   the topic
+ * @param   keydata void*   key information for calculating the partition
+ * @param   keylen  size_t  key size
+ * @param   partition_cnt   int32_t the count of the number of partitions
+ * @param   rkt_opaque  void*   opaque topic info
+ * @param   msg_opaque  void*   opaque message info
+ */
+static int32_t producer_paritioner_callback( const rd_kafka_topic_t *rkt,
+                                      const void *keydata,
+                                      size_t keylen,
+                                      int32_t partition_cnt,
+                                      void *rkt_opaque,
+                                      void *msg_opaque) {
+    /* Pick a random partition */
+    int retry;
+    for(retry=0;retry<partition_cnt;retry++) {
+        int32_t partition = rand() % partition_cnt;
+        if(rd_kafka_topic_partition_available(rkt, partition)) {
+            break; /* this one will do */
+        }
+    }
+}
+
+/**
+ * hexdump
+ *
+ * Write the given payload to file in hex notation.
+ *
+ * @param fp    FILE*   the file into which to write
+ * @param name  char*   name
+ * @param ptr   void*   payload
+ * @param len   size_t  payload length
+ */
 static void hexdump (FILE *fp, const char *name, const void *ptr, size_t len) {
 	const char *p = (const char *)ptr;
 	int of = 0;
@@ -55,6 +133,14 @@ static void hexdump (FILE *fp, const char *name, const void *ptr, size_t len) {
 	}
 }
 
+/**
+ * msg_consume
+ *
+ * Callback on message receipt.
+ *
+ * @param rkmessage    rd_kafka_message_t* the message
+ * @param opaque       void*   opaque context
+ */
 static void msg_consume (rd_kafka_message_t *rkmessage,
 			 void *opaque) {
 
@@ -113,7 +199,16 @@ static void msg_consume (rd_kafka_message_t *rkmessage,
 }
 
 /**
+ * logger
+ *
  * Kafka logger callback (optional)
+ *
+ * todo:  introduce better logging
+ *
+ * @param rk       rd_kafka_t  the producer or consumer
+ * @param level    int         the log level
+ * @param fac      char*       something of which I am unaware
+ * @param buf      char*       the log message
  */
 static void logger (const rd_kafka_t *rk, int level,
 		    const char *fac, const char *buf) {
@@ -124,6 +219,13 @@ static void logger (const rd_kafka_t *rk, int level,
 		level, fac, rd_kafka_name(rk), buf);
 }
 
+/**
+ * consumer_init_kafka
+ *
+ * Initialize the Kafka context and instantiate a consumer.
+ *
+ * @param   config  HermannInstanceConfig*  pointer to the instance configuration for this producer or consumer
+ */
 void consumer_init_kafka(HermannInstanceConfig* config) {
 
     config->quiet = !isatty(STDIN_FILENO);
@@ -163,7 +265,13 @@ void consumer_init_kafka(HermannInstanceConfig* config) {
 
 // Ruby gem extensions
 
-/* Hermann::Consumer.consume */
+/**
+ * Hermann::Consumer.consume
+ *
+ * Begin listening on the configured topic for messages.  msg_consume will be called on each message received.
+ *
+ * @param   VALUE   self    the Ruby object for this consumer
+ */
 static VALUE consumer_consume(VALUE self) {
 
     HermannInstanceConfig* consumerConfig;
@@ -205,6 +313,13 @@ static VALUE consumer_consume(VALUE self) {
     return Qnil;
 }
 
+/**
+ *  producer_init_kafka
+ *
+ *  Initialize the producer instance, setting up the Kafka topic and context.
+ *
+ *  @param  config  HermannInstanceConfig*  the instance configuration associated with this producer.
+ */
 void producer_init_kafka(HermannInstanceConfig* config) {
 
     config->quiet = !isatty(STDIN_FILENO);
@@ -239,10 +354,19 @@ void producer_init_kafka(HermannInstanceConfig* config) {
     /* Create topic */
     config->rkt = rd_kafka_topic_new(config->rk, config->topic, config->topic_conf);
 
+    /* Set the partitioner callback */
+    rd_kafka_topic_conf_set_partitioner_cb( config->topic_conf, producer_paritioner_callback );
+
     /* We're now initialized */
     config->isInitialized = 1;
 }
 
+/**
+ *  producer_push_single
+ *
+ *  @param  self    VALUE   the Ruby producer instance
+ *  @param  message VALUE   the ruby String containing the outgoing message.
+ */
 static VALUE producer_push_single(VALUE self, VALUE message) {
 
     HermannInstanceConfig* producerConfig;
@@ -291,6 +415,15 @@ static VALUE producer_push_single(VALUE self, VALUE message) {
     return self;
 }
 
+/**
+ *  producer_push_array
+ *
+ *  Publish each of the messages in array on the configured topic.
+ *
+ *  @param  self    VALUE   the instance of the Ruby Producer object
+ *  @param  length  int     the length of the outgoing messages array
+ *  @param  array   VALUE   the Ruby array of messages
+ */
 static VALUE producer_push_array(VALUE self, int length, VALUE array) {
 
     int i;
@@ -304,7 +437,14 @@ static VALUE producer_push_array(VALUE self, int length, VALUE array) {
     return self;
 }
 
-/* Hermann::Producer.push(msg) */
+/**
+ *  Hermann::Producer.push(msg)
+ *
+ *  Publish the given message on the configured topic.
+ *
+ *  @param  self    VALUE   the Ruby instance of the Producer.
+ *  @param  message VALUE   the Ruby string containing the message.
+ */
 static VALUE producer_push(VALUE self, VALUE message) {
 
     VALUE arrayP = rb_check_array_type(message);
@@ -316,6 +456,13 @@ static VALUE producer_push(VALUE self, VALUE message) {
     }
 }
 
+/**
+ *  consumer_free
+ *
+ *  Callback called when Ruby needs to GC the configuration associated with an Hermann instance.
+ *
+ *  @param  p   void*   the instance of an HermannInstanceConfig to be freed from allocated memory.
+ */
 static void consumer_free(void * p) {
 
     HermannInstanceConfig* config = (HermannInstanceConfig *)p;
@@ -329,6 +476,13 @@ static void consumer_free(void * p) {
     free(config);
 }
 
+/**
+ *  consumer_allocate
+ *
+ *  Allocate and wrap an HermannInstanceConfig for this Consumer object.
+ *
+ *  @param klass    VALUE   the class of the enclosing Ruby object.
+ */
 static VALUE consumer_allocate(VALUE klass) {
 
     VALUE obj;
@@ -339,6 +493,16 @@ static VALUE consumer_allocate(VALUE klass) {
     return obj;
 }
 
+/**
+ *  consumer_initialize
+ *
+ *  todo: configure the brokers through passed parameter, later through zk
+ *
+ *  Set up the Consumer's HermannInstanceConfig context.
+ *
+ *  @param  self    VALUE   the Ruby instance of the Consumer
+ *  @param  topic   VALUE   the Ruby string containing the topic name
+ */
 static VALUE consumer_initialize(VALUE self, VALUE topic) {
 
     HermannInstanceConfig* consumerConfig;
@@ -357,6 +521,15 @@ static VALUE consumer_initialize(VALUE self, VALUE topic) {
     return self;
 }
 
+/**
+ *  consumer_init_copy
+ *
+ *  When copying into a new instance of a Consumer, reproduce the configuration info.
+ *
+ *  @param  copy    VALUE   the Ruby Consumer instance (with configuration) as destination
+ *  @param  orig    VALUE   the Ruby Consumer instance (with configuration) as source
+ *
+ */
 static VALUE consumer_init_copy(VALUE copy, VALUE orig) {
     HermannInstanceConfig* orig_config;
     HermannInstanceConfig* copy_config;
@@ -378,6 +551,13 @@ static VALUE consumer_init_copy(VALUE copy, VALUE orig) {
     return copy;
 }
 
+/**
+ *  producer_free
+ *
+ *  Reclaim memory allocated to the Producer's configuration
+ *
+ *  @param  p   void*   the instance's configuration struct
+ */
 static void producer_free(void * p) {
 
     HermannInstanceConfig* config = (HermannInstanceConfig *)p;
@@ -392,6 +572,13 @@ static void producer_free(void * p) {
     free(config);
 }
 
+/**
+ *  producer_allocate
+ *
+ *  Allocate the memory for a Producer's configuration
+ *
+ *  @param  klass   VALUE   the class of the Producer
+ */
 static VALUE producer_allocate(VALUE klass) {
 
     VALUE obj;
@@ -402,6 +589,14 @@ static VALUE producer_allocate(VALUE klass) {
     return obj;
 }
 
+/**
+ *  producer_initialize
+ *
+ *  Set up the configuration context for the Producer instance
+ *
+ *  @param  self    VALUE   the Producer instance
+ *  @param  topic   VALUE   the Ruby string naming the topic
+ */
 static VALUE producer_initialize(VALUE self, VALUE topic) {
 
     HermannInstanceConfig* producerConfig;
@@ -412,7 +607,10 @@ static VALUE producer_initialize(VALUE self, VALUE topic) {
 	
     producerConfig->topic = topicPtr;
     producerConfig->brokers = "localhost:9092";
-    producerConfig->partition = 0;
+    /** Using RD_KAFKA_PARTITION_UA specifies we want the partitioner callback to be called to determine the target
+     *  partition
+     */
+    producerConfig->partition = RD_KAFKA_PARTITION_UA;
     producerConfig->run = 1;
     producerConfig->exit_eof = 0;
     producerConfig->quiet = 0;
@@ -420,6 +618,14 @@ static VALUE producer_initialize(VALUE self, VALUE topic) {
     return self;
 }
 
+/**
+ *  producer_init_copy
+ *
+ *  Copy the configuration information from orig into copy for the given Producer instances.
+ *
+ *  @param  copy    VALUE   destination Producer
+ *  @param  orign   VALUE   source Producer
+ */
 static VALUE producer_init_copy(VALUE copy, VALUE orig) {
     HermannInstanceConfig* orig_config;
     HermannInstanceConfig* copy_config;
@@ -441,6 +647,13 @@ static VALUE producer_init_copy(VALUE copy, VALUE orig) {
     return copy;
 }
 
+/**
+ * Init_hermann_lib
+ *
+ * Called by Ruby when the Hermann gem is loaded.
+ * Defines the Hermann module.
+ * Defines the Producer and Consumer classes.
+ */
 void Init_hermann_lib() {
 
     /* Define the module */
