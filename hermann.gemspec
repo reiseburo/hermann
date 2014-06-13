@@ -6,7 +6,7 @@ SPEC = Gem::Specification.new do |s|
 
   s.authors = ["Stan Campbell"]
   s.date = %q{2014-05-29}
-  s.description = %q{Ruby gem wrapper for a C based Kafka Consumer}
+  s.description = %q{Ruby gem wrapper for the RdKafka C library}
   s.email = %q{stan.campbell3@gmail.com}
   s.files = [ "Rakefile", "ext/hermann_lib.h", "ext/hermann_lib.c", "ext/extconf.rb", "bin/hermann",
               "lib/hermann.rb", "ext/hermann_lib.o"]
