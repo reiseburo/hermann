@@ -500,20 +500,26 @@ static VALUE consumer_allocate(VALUE klass) {
  *
  *  Set up the Consumer's HermannInstanceConfig context.
  *
- *  @param  self    VALUE   the Ruby instance of the Consumer
- *  @param  topic   VALUE   the Ruby string containing the topic name
+ *  @param  self        VALUE   the Ruby instance of the Consumer
+ *  @param  topic       VALUE   a Ruby string
+ *  @param  brokers     VALUE   a Ruby string containing list of host:port
+ *  @param  partition   VALUE   a Ruby number
  */
-static VALUE consumer_initialize(VALUE self, VALUE topic) {
+static VALUE consumer_initialize(VALUE self, VALUE topic, VALUE brokers, VALUE partition) {
 
     HermannInstanceConfig* consumerConfig;
     char* topicPtr;
+    char* brokersPtr;
+    int partitionNo;
 
     topicPtr = StringValuePtr(topic);
+    brokersPtr = StringValuePtr(brokers);
+    partitionNo = FIX2INT(partition);
     Data_Get_Struct(self, HermannInstanceConfig, consumerConfig);
 
     consumerConfig->topic = topicPtr;
-    consumerConfig->brokers = "localhost:9092";
-    consumerConfig->partition = 0;
+    consumerConfig->brokers = brokersPtr;
+    consumerConfig->partition = partitionNo;
     consumerConfig->run = 1;
     consumerConfig->exit_eof = 0;
     consumerConfig->quiet = 0;
@@ -596,17 +602,20 @@ static VALUE producer_allocate(VALUE klass) {
  *
  *  @param  self    VALUE   the Producer instance
  *  @param  topic   VALUE   the Ruby string naming the topic
+ *  @param  brokers VALUE   a Ruby string containing host:port pairs separated by commas
  */
-static VALUE producer_initialize(VALUE self, VALUE topic) {
+static VALUE producer_initialize(VALUE self, VALUE topic, VALUE brokers) {
 
     HermannInstanceConfig* producerConfig;
     char* topicPtr;
+    char* brokersPtr;
 
     topicPtr = StringValuePtr(topic);
+    brokersPtr = StringValuePtr(brokers);
     Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
 	
     producerConfig->topic = topicPtr;
-    producerConfig->brokers = "localhost:9092";
+    producerConfig->brokers = brokersPtr;
     /** Using RD_KAFKA_PARTITION_UA specifies we want the partitioner callback to be called to determine the target
      *  partition
      */
@@ -666,7 +675,7 @@ void Init_hermann_lib() {
     rb_define_alloc_func(c_consumer, consumer_allocate);
 
     /* Initialize */
-    rb_define_method(c_consumer, "initialize", consumer_initialize, 1);
+    rb_define_method(c_consumer, "initialize", consumer_initialize, 3);
     rb_define_method(c_consumer, "initialize_copy", consumer_init_copy, 1);
 
     /* Consumer has method 'consume' */
@@ -679,7 +688,7 @@ void Init_hermann_lib() {
     rb_define_alloc_func(c_producer, producer_allocate);
 
     /* Initialize */
-    rb_define_method(c_producer, "initialize", producer_initialize, 1);
+    rb_define_method(c_producer, "initialize", producer_initialize, 2);
     rb_define_method(c_producer, "initialize_copy", producer_init_copy, 1);
 
     /* Producer.push(msg) */
