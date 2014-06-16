@@ -7,7 +7,7 @@ This library wraps the librdkafka library (https://github.com/edenhill/librdkafk
 
 Usage is modelled on the kafka-rb gem (https://github.com/acrosa/kafka-rb) and is fairly straightforward.
 
-- Kafka 0.7 and Kafka 0.8 are supported.
+- Kafka 0.8 is supported.
 - Ruby 1.8.7 and Ruby 2.1.1 have been tested, but JRuby and versions >= 1.8 should work as long as the librdkafka library is installed.
 - This is an early alpha version of the gem, so expect bumps in the road.
 
