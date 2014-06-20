@@ -266,6 +266,34 @@ void consumer_init_kafka(HermannInstanceConfig* config) {
 // Ruby gem extensions
 
 /**
+ * Callback invoked if Ruby needs to stop our Consumer's IO loop for any reason (system exit, etc.)
+ */
+static void consumer_consume_stop_callback(void *ptr) {
+    HermannInstanceConfig* config = (HermannInstanceConfig*)ptr;
+
+    config->run = 0;
+}
+
+/**
+ * Loop on a timeout to receive messages from Kafka.  When the consumer_consume_stop_callback is invoked by Ruby,
+ * we'll break out of our loop and return.
+ */
+void consumer_consume_loop(HermannInstanceConfig* consumerConfig) {
+
+    while (consumerConfig->run) {
+        rd_kafka_message_t *rkmessage;
+
+        if(rd_kafka_consume_callback(consumerConfig->rkt, consumerConfig->partition,
+        							      1000/*timeout*/,
+        							      msg_consume,
+        							      consumerConfig) < 0) {
+            fprintf(stderr, "%% Error: %s\n", rd_kafka_err2str( rd_kafka_errno2err(errno)));
+        }
+
+    }
+}
+
+/**
  * Hermann::Consumer.consume
  *
  * Begin listening on the configured topic for messages.  msg_consume will be called on each message received.
@@ -294,18 +322,16 @@ static VALUE consumer_consume(VALUE self) {
         exit(1);
     }
 
-    /* Run loop */
-    while (consumerConfig->run) {
-        rd_kafka_message_t *rkmessage;
+    /** The consumer will listen for incoming messages in a loop, timing out and checking the consumerConfig->run
+     *  flag every second.
+     *
+     *  Call rb_thread_blocking_region to release the GVM lock and allow Ruby to amuse itself while we wait on
+     *  IO from Kafka.
+     *
+     *  If Ruby needs to interrupt the consumer loop, the stop callback will be invoked and the loop should exit.
+     */
+    rb_thread_blocking_region(consumer_consume_loop, consumerConfig, consumer_consume_stop_callback, consumerConfig);
 
-        if(rd_kafka_consume_callback(consumerConfig->rkt, consumerConfig->partition,
-        							      1000/*timeout*/,
-        							      msg_consume,
-        							      consumerConfig) < 0) {
-            fprintf(stderr, "%% Error: %s\n", rd_kafka_err2str( rd_kafka_errno2err(errno)));
-        }
-
-    }
 
     /* Stop consuming */
     rd_kafka_consume_stop(consumerConfig->rkt, consumerConfig->partition);
