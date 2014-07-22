@@ -47,6 +47,10 @@ static VALUE m_hermann;
 
 static int DEBUG = 0;
 
+// Should we expect rb_thread_blocking_region to be present?
+// #define RB_THREAD_BLOCKING_REGION
+#undef RB_THREAD_BLOCKING_REGION
+
 static 	enum {
 	OUTPUT_HEXDUMP,
 	OUTPUT_RAW,

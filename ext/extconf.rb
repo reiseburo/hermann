@@ -24,5 +24,9 @@ unless find_library('rdkafka', 'rd_kafka_conf_new')
    abort "librdkafka not installed"
 end
 
+#unless have_func "rb_thread_blocking_region"
+#  abort "rb_thread_blocking_region function missing"
+#end
+
 # create_header('hermann_lib.h')
 create_makefile('hermann/hermann_lib')

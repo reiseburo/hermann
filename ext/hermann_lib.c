@@ -322,6 +322,7 @@ static VALUE consumer_consume(VALUE self) {
         exit(1);
     }
 
+#ifdef RB_THREAD_BLOCKING_REGION
     /** The consumer will listen for incoming messages in a loop, timing out and checking the consumerConfig->run
      *  flag every second.
      *
@@ -331,6 +332,9 @@ static VALUE consumer_consume(VALUE self) {
      *  If Ruby needs to interrupt the consumer loop, the stop callback will be invoked and the loop should exit.
      */
     rb_thread_blocking_region(consumer_consume_loop, consumerConfig, consumer_consume_stop_callback, consumerConfig);
+#else
+    consumer_consume_loop(consumerConfig);
+#endif
 
 
     /* Stop consuming */
