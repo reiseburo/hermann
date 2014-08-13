@@ -25,21 +25,19 @@ require 'hermann'
 
 \# Initialize requires topic, brokers list, and partition number
 
-c = Hermann::Consumer.new( "device_actions", "localhost:9092", 0 )
-c.consume() do
-  |msg| puts("Received: #{msg}")
-end
+    c = Hermann::Consumer.new( "device_actions", "localhost:9092", 0 )
+    c.consume() do
+      |msg| puts("Received: #{msg}")
+    end
 
 #### Producer
 
-require 'hermann'
+    require 'hermann'
 
-p = Hermann::Producer.new( "device_actions", "localhost:9092" )
+    p = Hermann::Producer.new( "device_actions", "localhost:9092" )
 
-messages = [ "Locate", "Scream", "Wipe", "Degauss" ]
-messages.each {
-    |msg| p.push(msg)
-}
+    messages = [ "Locate", "Scream", "Wipe", "Degauss" ]
+    messages.each { |msg| p.push(msg) }
 
 ## Questions?
 
