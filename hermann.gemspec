@@ -1,4 +1,3 @@
-
 SPEC = Gem::Specification.new do |s|
   s.name               = "hermann"
   s.version            = "0.11"
@@ -12,19 +11,12 @@ SPEC = Gem::Specification.new do |s|
               "lib/hermann.rb", "ext/hermann_lib.o"]
   s.extensions = [ "ext/extconf.rb"]
   s.test_files = ["test/test_hermann.rb"]
-  s.homepage = %q{http://rubygems.org/gems/hermann}
+  s.homepage = %q{http://https://github.com/lookout/Hermann}
   s.require_paths = ["lib", "ext"]
   s.rubygems_version = %q{2.2.2}
   s.summary = %q{The Kafka consumer is based on the librdkafka C library.}
 
   s.platform = Gem::Platform::CURRENT
 
-  if s.respond_to? :specification_version then
-    s.specification_version = 3
-
-    if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
-    else
-    end
-  else
-  end
+  s.specification_version = 3 if s.respond_to?(:specification_version)
 end
