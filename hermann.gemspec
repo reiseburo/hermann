@@ -1,6 +1,6 @@
 SPEC = Gem::Specification.new do |s|
   s.name               = "hermann"
-  s.version            = "0.11"
+  s.version            = "0.13"
   s.default_executable = "hermann"
 
   s.authors = ["Stan Campbell"]
@@ -15,6 +15,7 @@ SPEC = Gem::Specification.new do |s|
   s.require_paths = ["lib", "ext"]
   s.rubygems_version = %q{2.2.2}
   s.summary = %q{The Kafka consumer is based on the librdkafka C library.}
+  s.licenses = ['MIT']
 
   s.platform = Gem::Platform::CURRENT
 
