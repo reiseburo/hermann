@@ -47,6 +47,50 @@ void log_debug(char* msg) {
 }
 
 /**
+ * Convenience function
+ *
+ * @param   config  HermannInstanceConfig
+ * @param   outputStream    FILE*
+ *
+ * Log the contents of the configuration to the provided stream.
+ */
+void fprintf_hermann_instance_config(HermannInstanceConfig* config, FILE* outputStream) {
+
+    const char* topic;
+    const char* brokers;
+    int isRkSet;
+    int isRktSet;
+    int partition;
+    int isInitialized;
+
+    if(config==NULL) {
+        fprintf(outputStream, "NULL configuration");
+    } else {
+
+        isRkSet = config->rk != NULL;
+        isRktSet = config->rkt != NULL;
+
+        if(config->topic == NULL) {
+            topic = NULL;
+        } else {
+            topic = config->topic;
+        }
+
+        if(config->brokers == NULL) {
+            brokers = "NULL";
+        } else {
+            brokers = config->brokers;
+        }
+
+        partition = config->partition;
+        isInitialized = config->isInitialized;
+    }
+
+    fprintf(outputStream, "{ topic: %s, brokers: %s, partition: %d, isInitialized: %d, rkSet: %d, rkTSet: %d }\n",
+        topic, brokers, partition, isInitialized, isRkSet, isRktSet );
+}
+
+/**
  * Message delivery report callback.
  * Called once for each message.
  *
@@ -226,7 +270,11 @@ static void logger (const rd_kafka_t *rk, int level,
  *
  * @param   config  HermannInstanceConfig*  pointer to the instance configuration for this producer or consumer
  */
-void consumer_init_kafka(HermannInstanceConfig* config) {
+void consumer_init_kafka(HermannInstanceConfig* config)
+{
+#ifdef TRACE
+    fprintf(stderr, "consumer_init_kafka");
+#endif
 
     config->quiet = !isatty(STDIN_FILENO);
 
@@ -271,6 +319,10 @@ void consumer_init_kafka(HermannInstanceConfig* config) {
 static void consumer_consume_stop_callback(void *ptr) {
     HermannInstanceConfig* config = (HermannInstanceConfig*)ptr;
 
+#ifdef TRACE
+    fprintf(stderr, "consumer_consume_stop_callback");
+#endif
+
     config->run = 0;
 }
 
@@ -279,6 +331,10 @@ static void consumer_consume_stop_callback(void *ptr) {
  * we'll break out of our loop and return.
  */
 void consumer_consume_loop(HermannInstanceConfig* consumerConfig) {
+
+#ifdef TRACE
+    fprintf(stderr, "consumer_consume_loop");
+#endif
 
     while (consumerConfig->run) {
         rd_kafka_message_t *rkmessage;
@@ -303,6 +359,10 @@ void consumer_consume_loop(HermannInstanceConfig* consumerConfig) {
 static VALUE consumer_consume(VALUE self) {
 
     HermannInstanceConfig* consumerConfig;
+
+#ifdef TRACE
+    fprintf(stderr, "consumer_consume");
+#endif
 
     Data_Get_Struct(self, HermannInstanceConfig, consumerConfig);
 
@@ -352,6 +412,10 @@ static VALUE consumer_consume(VALUE self) {
  */
 void producer_init_kafka(HermannInstanceConfig* config) {
 
+#ifdef TRACE
+    fprintf(stderr, "producer_init_kafka\n");
+#endif
+
     config->quiet = !isatty(STDIN_FILENO);
 
     /* Kafka configuration */
@@ -389,6 +453,11 @@ void producer_init_kafka(HermannInstanceConfig* config) {
 
     /* We're now initialized */
     config->isInitialized = 1;
+
+#ifdef TRACE
+    fprintf(stderr, "producer_init_kafka::END\n");
+    fprintf_hermann_instance_config(config, stderr);
+#endif
 }
 
 /**
@@ -401,6 +470,10 @@ static VALUE producer_push_single(VALUE self, VALUE message) {
 
     HermannInstanceConfig* producerConfig;
     char buf[2048];
+
+#ifdef TRACE
+    fprintf(stderr, "producer_push_single\n");
+#endif
 
     Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
 
@@ -419,6 +492,13 @@ static VALUE producer_push_single(VALUE self, VALUE message) {
     size_t len = strlen(buf);
     if (buf[len-1] == '\n')
         buf[--len] = '\0';
+
+#ifdef TRACE
+    fprintf(stderr, "producer_push_single::before_produce message1\n");
+    fprintf_hermann_instance_config(producerConfig, stderr);
+    fprintf(stderr, "producer_push_single::before_produce_message2\n");
+    fflush(stderr);
+#endif
 
     /* Send/Produce message. */
 	if (rd_kafka_produce(producerConfig->rkt, producerConfig->partition, RD_KAFKA_MSG_F_COPY,
@@ -442,6 +522,10 @@ static VALUE producer_push_single(VALUE self, VALUE message) {
     /* Must poll to handle delivery reports */
     rd_kafka_poll(producerConfig->rk, 0);
 
+#ifdef TRACE
+    fprintf(stderr, "producer_push_single::prior return\n");
+#endif
+
     return self;
 }
 
@@ -458,6 +542,10 @@ static VALUE producer_push_array(VALUE self, int length, VALUE array) {
 
     int i;
     VALUE message;
+
+#ifdef TRACE
+    fprintf(stderr, "producer_push_array\n");
+#endif
 
     for(i=0;i<length;i++) {
         message = RARRAY_PTR(array)[i];
@@ -479,6 +567,10 @@ static VALUE producer_push(VALUE self, VALUE message) {
 
     VALUE arrayP = rb_check_array_type(message);
 
+#ifdef TRACE
+    fprintf(stderr, "producer_push\n");
+#endif
+
     if(!NIL_P(arrayP)) {
         return producer_push_array(self, RARRAY_LEN(arrayP), message);
     } else {
@@ -497,10 +589,18 @@ static void consumer_free(void * p) {
 
     HermannInstanceConfig* config = (HermannInstanceConfig *)p;
 
-    // the p *should* contain a pointer to the consumerConfig which also must be freed
-    rd_kafka_topic_destroy(config->rkt);
+#ifdef TRACE
+    fprintf(stderr, "consumer_free\n");
+#endif
 
-    rd_kafka_destroy(config->rk);
+    // the p *should* contain a pointer to the consumerConfig which also must be freed
+    if(config->rkt != NULL) {
+        rd_kafka_topic_destroy(config->rkt);
+    }
+
+    if(config->rk != NULL) {
+        rd_kafka_destroy(config->rk);
+    }
 
     // clean up the struct
     free(config);
@@ -516,8 +616,31 @@ static void consumer_free(void * p) {
 static VALUE consumer_allocate(VALUE klass) {
 
     VALUE obj;
+    HermannInstanceConfig* consumerConfig;
 
-    HermannInstanceConfig* consumerConfig = ALLOC(HermannInstanceConfig);
+#ifdef TRACE
+    fprintf(stderr, "consumer_free\n");
+#endif
+
+    consumerConfig = ALLOC(HermannInstanceConfig);
+
+    // Make sure it's initialized
+    consumerConfig->topic = NULL;
+    consumerConfig->rk = NULL;
+    consumerConfig->rkt = NULL;
+    consumerConfig->brokers = NULL;
+    consumerConfig->partition = -1;
+    consumerConfig->topic_conf = NULL;
+    consumerConfig->errstr[0] = 0;
+    consumerConfig->conf = NULL;
+    consumerConfig->debug = NULL;
+    consumerConfig->start_offset = -1;
+    consumerConfig->do_conf_dump = -1;
+    consumerConfig->run = 0;
+    consumerConfig->exit_eof = 0;
+    consumerConfig->quiet = 0;
+    consumerConfig->isInitialized = 0;
+
     obj = Data_Wrap_Struct(klass, 0, consumer_free, consumerConfig);
 
     return obj;
@@ -541,6 +664,10 @@ static VALUE consumer_initialize(VALUE self, VALUE topic, VALUE brokers, VALUE p
     char* topicPtr;
     char* brokersPtr;
     int partitionNo;
+
+#ifdef TRACE
+    fprintf(stderr, "consumer_initialize\n");
+#endif
 
     topicPtr = StringValuePtr(topic);
     brokersPtr = StringValuePtr(brokers);
@@ -570,6 +697,10 @@ static VALUE consumer_init_copy(VALUE copy, VALUE orig) {
     HermannInstanceConfig* orig_config;
     HermannInstanceConfig* copy_config;
 
+#ifdef TRACE
+    fprintf(stderr, "consumer_init_copy\n");
+#endif
+
     if(copy == orig) {
         return copy;
     }
@@ -596,13 +727,27 @@ static VALUE consumer_init_copy(VALUE copy, VALUE orig) {
  */
 static void producer_free(void * p) {
 
-    HermannInstanceConfig* config = (HermannInstanceConfig *)p;
+    HermannInstanceConfig* config;
+
+#ifdef TRACE
+    fprintf(stderr, "producer_free\n");
+#endif
+
+    config = (HermannInstanceConfig *)p;
+
+    if(NULL==p) {
+        return;
+    }
 
     // Clean up the topic
-    rd_kafka_topic_destroy(config->rkt);
+    if(config->rkt != NULL) {
+        rd_kafka_topic_destroy(config->rkt);
+    }
 
     // Take care of the producer instance
-    rd_kafka_destroy(config->rk);
+    if(config->rk != NULL) {
+        rd_kafka_destroy(config->rk);
+    }
 
     // Free the struct
     free(config);
@@ -618,8 +763,30 @@ static void producer_free(void * p) {
 static VALUE producer_allocate(VALUE klass) {
 
     VALUE obj;
+    HermannInstanceConfig* producerConfig;
 
-    HermannInstanceConfig* producerConfig = ALLOC(HermannInstanceConfig);
+#ifdef TRACE
+    fprintf(stderr, "producer_allocate\n");
+#endif
+
+    producerConfig = ALLOC(HermannInstanceConfig);
+
+    producerConfig->topic = NULL;
+    producerConfig->rk = NULL;
+    producerConfig->rkt = NULL;
+    producerConfig->brokers = NULL;
+    producerConfig->partition = -1;
+    producerConfig->topic_conf = NULL;
+    producerConfig->errstr[0] = 0;
+    producerConfig->conf = NULL;
+    producerConfig->debug = NULL;
+    producerConfig->start_offset = -1;
+    producerConfig->do_conf_dump = -1;
+    producerConfig->run = 0;
+    producerConfig->exit_eof = 0;
+    producerConfig->quiet = 0;
+    producerConfig->isInitialized = 0;
+
     obj = Data_Wrap_Struct(klass, 0, producer_free, producerConfig);
 
     return obj;
@@ -639,6 +806,10 @@ static VALUE producer_initialize(VALUE self, VALUE topic, VALUE brokers) {
     HermannInstanceConfig* producerConfig;
     char* topicPtr;
     char* brokersPtr;
+
+#ifdef TRACE
+    fprintf(stderr, "producer_initialize\n");
+#endif
 
     topicPtr = StringValuePtr(topic);
     brokersPtr = StringValuePtr(brokers);
@@ -669,6 +840,10 @@ static VALUE producer_init_copy(VALUE copy, VALUE orig) {
     HermannInstanceConfig* orig_config;
     HermannInstanceConfig* copy_config;
 
+#ifdef TRACE
+    fprintf(stderr, "producer_init_copy\n");
+#endif
+
     if(copy == orig) {
         return copy;
     }
@@ -694,6 +869,10 @@ static VALUE producer_init_copy(VALUE copy, VALUE orig) {
  * Defines the Producer and Consumer classes.
  */
 void Init_hermann_lib() {
+
+#ifdef TRACE
+    fprintf(stderr, "init_hermann_lib\n");
+#endif
 
     /* Define the module */
     m_hermann = rb_define_module("Hermann");
