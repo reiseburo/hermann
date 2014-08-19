@@ -42,6 +42,8 @@
 
 #include <librdkafka/rdkafka.h>
 
+#undef TRACE
+
 // Holds the defined Ruby module for Hermann
 static VALUE m_hermann;
 
