@@ -42,12 +42,12 @@
 
 #include <librdkafka/rdkafka.h>
 
-#define TRACE
+#undef TRACE
 
 // Holds the defined Ruby module for Hermann
 static VALUE m_hermann;
 
-static int DEBUG = 1;
+static int DEBUG = 0;
 
 // Should we expect rb_thread_blocking_region to be present?
 // #define RB_THREAD_BLOCKING_REGION
