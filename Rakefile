@@ -1,5 +1,7 @@
 
+require 'rubygems'
 require 'rake/clean'
+require 'rspec/core/rake_task'
 
 EXT_CONF = "ext/extconf.rb"
 MAKEFILE = 'ext/Makefile'
@@ -29,3 +31,5 @@ end
 
 desc "Build the native library"
 task :build => MODULE
+
+RSpec::Core::RakeTask.new(:spec)

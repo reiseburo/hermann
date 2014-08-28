@@ -1,1 +1,7 @@
 hermann.iml
+.ruby-*
+ext/*.so
+ext/*.o
+ext/mkmf.log
+*.sw*
+ext/Makefile
