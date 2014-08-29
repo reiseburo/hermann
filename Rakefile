@@ -33,3 +33,5 @@ desc "Build the native library"
 task :build => MODULE
 
 RSpec::Core::RakeTask.new(:spec)
+
+task :default => [:clean, :build, :spec]
