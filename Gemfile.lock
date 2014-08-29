@@ -3,6 +3,8 @@ GEM
   specs:
     diff-lcs (1.2.5)
     rake (10.3.2)
+    rake-compiler (0.9.3)
+      rake
     rspec (3.0.0)
       rspec-core (~> 3.0.0)
       rspec-expectations (~> 3.0.0)
@@ -24,5 +26,6 @@ PLATFORMS
 
 DEPENDENCIES
   rake
+  rake-compiler
   rspec (~> 3.0.0)
   rspec-its

@@ -12,15 +12,17 @@ puts "Include Dir: #{INCLUDEDIR}"
 
 HEADER_DIRS = [INCLUDEDIR]
 
-LIB_DIRS = [LIBDIR]
+LIB_DIRS = [LIBDIR, './librdkafka']
 
 dir_config('rdkafka', HEADER_DIRS, LIB_DIRS)
 
-unless find_header('librdkafka/rdkafka.h')
+ROOTDIR = File.expand_path(File.dirname(__FILE__) + '/../../')
+RDK = File.join(ROOTDIR, 'librdkafka/target')
+unless find_header('librdkafka/rdkafka.h', File.join(RDK, 'include'))
   abort "librdkafka not installed"
 end
 
-unless find_library('rdkafka', 'rd_kafka_conf_new')
+unless find_library('rdkafka', 'rd_kafka_conf_new', File.join(RDK, 'lib'))
    abort "librdkafka not installed"
 end
 
