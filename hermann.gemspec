@@ -8,7 +8,7 @@ SPEC = Gem::Specification.new do |s|
   s.description = %q{Ruby gem wrapper for the RdKafka C library}
   s.email = %q{stan.campbell3@gmail.com}
   s.files = [ "Rakefile", "ext/hermann_lib.h", "ext/hermann_lib.c", "ext/extconf.rb", "bin/hermann",
-              "lib/hermann.rb", "ext/hermann_lib.o"]
+              "lib/hermann.rb"]
   s.extensions = [ "ext/extconf.rb"]
   s.test_files = ["test/test_hermann.rb"]
   s.homepage = %q{http://https://github.com/lookout/Hermann}
