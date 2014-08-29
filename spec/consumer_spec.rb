@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'hermann/consumer'
 
 describe Hermann::Consumer do
   subject(:consumer) { described_class.new(topic, brokers, partition) }

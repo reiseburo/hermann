@@ -1,1 +1,2 @@
-require 'hermann_lib'
+module Hermann
+end

@@ -45,7 +45,7 @@
 #undef TRACE
 
 // Holds the defined Ruby module for Hermann
-static VALUE m_hermann;
+static VALUE hermann_module;
 
 static int DEBUG = 0;
 

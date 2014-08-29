@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'hermann/producer'
 
 describe Hermann::Producer do
   subject(:producer) { described_class.new(topic, brokers) }
@@ -7,6 +8,27 @@ describe Hermann::Producer do
   let(:brokers) { 'localhost:1337' }
 
   describe '#push' do
-    it { should respond_to :push }
+    subject(:result) { producer.push(value) }
+
+    context 'with a single value' do
+      let(:value) { 'hello' }
+
+      it 'should invoke #push_single' do
+        expect(producer.internal).to receive(:push_single)
+        expect(result).not_to be_nil
+      end
+    end
+
+    context 'with an array value' do
+      let(:value) { ['hello', 'world'] }
+
+      it 'should invoke #push_single for each element' do
+        value.each do |v|
+          expect(producer.internal).to receive(:push_single).with(v)
+        end
+
+        expect(result).not_to be_nil
+      end
+    end
   end
 end

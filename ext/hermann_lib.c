@@ -529,54 +529,6 @@ static VALUE producer_push_single(VALUE self, VALUE message) {
     return self;
 }
 
-/**
- *  producer_push_array
- *
- *  Publish each of the messages in array on the configured topic.
- *
- *  @param  self    VALUE   the instance of the Ruby Producer object
- *  @param  length  int     the length of the outgoing messages array
- *  @param  array   VALUE   the Ruby array of messages
- */
-static VALUE producer_push_array(VALUE self, int length, VALUE array) {
-
-    int i;
-    VALUE message;
-
-#ifdef TRACE
-    fprintf(stderr, "producer_push_array\n");
-#endif
-
-    for(i=0;i<length;i++) {
-        message = RARRAY_PTR(array)[i];
-        producer_push_single(self, message);
-    }
-
-    return self;
-}
-
-/**
- *  Hermann::Producer.push(msg)
- *
- *  Publish the given message on the configured topic.
- *
- *  @param  self    VALUE   the Ruby instance of the Producer.
- *  @param  message VALUE   the Ruby string containing the message.
- */
-static VALUE producer_push(VALUE self, VALUE message) {
-
-    VALUE arrayP = rb_check_array_type(message);
-
-#ifdef TRACE
-    fprintf(stderr, "producer_push\n");
-#endif
-
-    if(!NIL_P(arrayP)) {
-        return producer_push_array(self, RARRAY_LEN(arrayP), message);
-    } else {
-        return producer_push_single(self, message);
-    }
-}
 
 /**
  *  consumer_free
@@ -875,10 +827,12 @@ void Init_hermann_lib() {
 #endif
 
     /* Define the module */
-    m_hermann = rb_define_module("Hermann");
+    hermann_module = rb_define_module("Hermann");
+    VALUE lib_module = rb_define_module_under(hermann_module, "Lib");
+
 
     /* ---- Define the consumer class ---- */
-    VALUE c_consumer = rb_define_class_under(m_hermann, "Consumer", rb_cObject);
+    VALUE c_consumer = rb_define_class_under(lib_module, "Consumer", rb_cObject);
 
     /* Allocate */
     rb_define_alloc_func(c_consumer, consumer_allocate);
@@ -891,7 +845,7 @@ void Init_hermann_lib() {
     rb_define_method( c_consumer, "consume", consumer_consume, 0 );
 
     /* ---- Define the producer class ---- */
-    VALUE c_producer = rb_define_class_under(m_hermann, "Producer", rb_cObject);
+    VALUE c_producer = rb_define_class_under(lib_module, "Producer", rb_cObject);
 
     /* Allocate */
     rb_define_alloc_func(c_producer, producer_allocate);
@@ -900,7 +854,7 @@ void Init_hermann_lib() {
     rb_define_method(c_producer, "initialize", producer_initialize, 2);
     rb_define_method(c_producer, "initialize_copy", producer_init_copy, 1);
 
-    /* Producer.push(msg) */
-    rb_define_method( c_producer, "push", producer_push, 1 );
+    /* Producer.push_single(msg) */
+    rb_define_method(c_producer, "push_single", producer_push_single, 1);
 
 }
