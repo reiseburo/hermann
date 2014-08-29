@@ -7,6 +7,14 @@ describe Hermann::Producer do
   let(:topic) { 'rspec' }
   let(:brokers) { 'localhost:1337' }
 
+  context 'with a bad broker configuration' do
+    let(:brokers) { '' }
+
+    it 'should raise an exception' do
+      producer.push('anything')
+    end
+  end
+
   describe '#push' do
     subject(:result) { producer.push(value) }
 
