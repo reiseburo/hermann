@@ -378,9 +378,11 @@ static VALUE consumer_consume(VALUE self) {
 
 	Data_Get_Struct(self, HermannInstanceConfig, consumerConfig);
 
-	if (consumerConfig->topic==NULL) {
-			fprintf(stderr, "Topic is null!");
-			return;
+	if ((NULL == consumerConfig->topic) ||
+		(0 == strlen(consumerConfig->topic))) {
+		fprintf(stderr, "Topic is null!\n");
+		rb_raise(rb_eRuntimeError, "Topic cannot be empty");
+		return self;
 	}
 
 	if (!consumerConfig->isInitialized) {

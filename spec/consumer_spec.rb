@@ -26,5 +26,10 @@ describe Hermann::Consumer do
       let(:brokers) { '' }
       it_behaves_like 'an error condition'
     end
+
+    context 'with a bad topic' do
+      let(:topic) { '' }
+      it_behaves_like 'an error condition'
+    end
   end
 end
