@@ -50,22 +50,24 @@ void fprintf_hermann_instance_config(HermannInstanceConfig* config, FILE* output
 	int partition;
 	int isInitialized;
 
-	if(config==NULL) {
+	if (NULL == config) {
 		fprintf(outputStream, "NULL configuration");
-	} else {
+	}
+	else {
+		isRkSet = (config->rk != NULL);
+		isRktSet = (config->rkt != NULL);
 
-		isRkSet = config->rk != NULL;
-		isRktSet = config->rkt != NULL;
-
-		if(config->topic == NULL) {
+		if (NULL == config->topic) {
 			topic = NULL;
-		} else {
+		}
+		else {
 			topic = config->topic;
 		}
 
-		if(config->brokers == NULL) {
+		if (NULL == config->brokers) {
 			brokers = "NULL";
-		} else {
+		}
+		else {
 			brokers = config->brokers;
 		}
 
@@ -88,14 +90,17 @@ void fprintf_hermann_instance_config(HermannInstanceConfig* config, FILE* output
  * @param opaque	void*   optional context
  * @param msg_opaque	void*   it's opaque
  */
-static void msg_delivered (rd_kafka_t *rk,
-			   void *payload, size_t len,
-			   int error_code,
-			   void *opaque, void *msg_opaque) {
+static void msg_delivered(rd_kafka_t *rk,
+						  void *payload,
+						  size_t len,
+						  int error_code,
+						  void *opaque,
+						  void *msg_opaque) {
 
-	if (error_code)
+	if (error_code) {
 		fprintf(stderr, "%% Message delivery failed: %s\n",
 			rd_kafka_err2str(error_code));
+	}
 }
 
 /**
@@ -112,17 +117,17 @@ static void msg_delivered (rd_kafka_t *rk,
  * @param   rkt_opaque  void*   opaque topic info
  * @param   msg_opaque  void*   opaque message info
  */
-static int32_t producer_paritioner_callback( const rd_kafka_topic_t *rkt,
-									  const void *keydata,
-									  size_t keylen,
-									  int32_t partition_cnt,
-									  void *rkt_opaque,
-									  void *msg_opaque) {
+static int32_t producer_partitioner_callback(const rd_kafka_topic_t *rkt,
+											 const void *keydata,
+											 size_t keylen,
+											 int32_t partition_cnt,
+											 void *rkt_opaque,
+											 void *msg_opaque) {
 	/* Pick a random partition */
-	int retry;
-	for(retry=0;retry<partition_cnt;retry++) {
+	int retry = 0;
+	for (; retry < partition_cnt; retry++) {
 		int32_t partition = rand() % partition_cnt;
-		if(rd_kafka_topic_partition_available(rkt, partition)) {
+		if (rd_kafka_topic_partition_available(rkt, partition)) {
 			break; /* this one will do */
 		}
 	}
@@ -138,13 +143,17 @@ static int32_t producer_paritioner_callback( const rd_kafka_topic_t *rkt,
  * @param ptr   void*   payload
  * @param len   size_t  payload length
  */
-static void hexdump (FILE *fp, const char *name, const void *ptr, size_t len) {
+static void hexdump(FILE *fp,
+					const char *name,
+					const void *ptr,
+					size_t len) {
 	const char *p = (const char *)ptr;
 	int of = 0;
 
 
-	if (name)
+	if (name) {
 		fprintf(fp, "%s hexdump (%zd bytes):\n", name, len);
+	}
 
 	for (of = 0 ; of < len ; of += 16) {
 		char hexen[16*3+1];
@@ -172,8 +181,8 @@ static void hexdump (FILE *fp, const char *name, const void *ptr, size_t len) {
  * @param rkmessage	rd_kafka_message_t* the message
  * @param opaque	   void*   opaque context
  */
-static void msg_consume (rd_kafka_message_t *rkmessage,
-			 void *opaque) {
+static void msg_consume(rd_kafka_message_t *rkmessage,
+						void *opaque) {
 
 	HermannInstanceConfig* cfg;
 
@@ -187,8 +196,9 @@ static void msg_consume (rd_kafka_message_t *rkmessage,
 				   rd_kafka_topic_name(rkmessage->rkt),
 				   rkmessage->partition, rkmessage->offset);
 
-			if (cfg->exit_eof)
+			if (cfg->exit_eof) {
 				cfg->run = 0;
+			}
 
 			return;
 		}
@@ -203,29 +213,36 @@ static void msg_consume (rd_kafka_message_t *rkmessage,
 	}
 
 	if (DEBUG && rkmessage->key_len) {
-		if (output == OUTPUT_HEXDUMP)
+		if (output == OUTPUT_HEXDUMP) {
 			hexdump(stdout, "Message Key",
 				rkmessage->key, rkmessage->key_len);
-		else
+		}
+		else {
 			printf("Key: %.*s\n",
 				   (int)rkmessage->key_len, (char *)rkmessage->key);
+		}
 	}
 
 	if (output == OUTPUT_HEXDUMP) {
-		if(DEBUG)
+		if (DEBUG) {
 			hexdump(stdout, "Message Payload", rkmessage->payload, rkmessage->len);
-	} else {
-		if(DEBUG)
+		}
+	}
+	else {
+		if (DEBUG) {
 			printf("%.*s\n", (int)rkmessage->len, (char *)rkmessage->payload);
+		}
 	}
 
 	// Yield the data to the Consumer's block
-	if(rb_block_given_p()) {
+	if (rb_block_given_p()) {
 		VALUE value = rb_str_new((char *)rkmessage->payload, rkmessage->len);
 		rb_yield(value);
-	} else {
-		if(DEBUG)
+	}
+	else {
+		if (DEBUG) {
 			fprintf(stderr, "No block given\n"); // todo: should this be an error?
+		}
 	}
 }
 
@@ -241,8 +258,10 @@ static void msg_consume (rd_kafka_message_t *rkmessage,
  * @param fac	  char*	   something of which I am unaware
  * @param buf	  char*	   the log message
  */
-static void logger (const rd_kafka_t *rk, int level,
-			const char *fac, const char *buf) {
+static void logger(const rd_kafka_t *rk,
+				   int level,
+				   const char *fac,
+				   const char *buf) {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 	fprintf(stderr, "%u.%03u RDKAFKA-%i-%s: %s: %s\n",
@@ -257,8 +276,7 @@ static void logger (const rd_kafka_t *rk, int level,
  *
  * @param   config  HermannInstanceConfig*  pointer to the instance configuration for this producer or consumer
  */
-void consumer_init_kafka(HermannInstanceConfig* config)
-{
+void consumer_init_kafka(HermannInstanceConfig* config) {
 #ifdef TRACE
 	fprintf(stderr, "consumer_init_kafka");
 #endif
@@ -277,7 +295,7 @@ void consumer_init_kafka(HermannInstanceConfig* config)
 		fprintf(stderr, "%% Failed to create new consumer: %s\n", config->errstr);
 		exit(1);
 	}
-	
+
 	/* Set logger */
 	rd_kafka_set_logger(config->rk, logger);
 	rd_kafka_set_log_level(config->rk, LOG_DEBUG);
@@ -286,7 +304,7 @@ void consumer_init_kafka(HermannInstanceConfig* config)
 	config->start_offset = RD_KAFKA_OFFSET_END;
 
 	/* Add brokers */
-	if(rd_kafka_brokers_add(config->rk, config->brokers) == 0) {
+	if (rd_kafka_brokers_add(config->rk, config->brokers) == 0) {
 		fprintf(stderr, "%% No valid brokers specified\n");
 		exit(1);
 	}
@@ -326,7 +344,7 @@ void consumer_consume_loop(HermannInstanceConfig* consumerConfig) {
 	while (consumerConfig->run) {
 		rd_kafka_message_t *rkmessage;
 
-		if(rd_kafka_consume_callback(consumerConfig->rkt, consumerConfig->partition,
+		if (rd_kafka_consume_callback(consumerConfig->rkt, consumerConfig->partition,
 										  1000/*timeout*/,
 										  msg_consume,
 										  consumerConfig) < 0) {
@@ -353,17 +371,17 @@ static VALUE consumer_consume(VALUE self) {
 
 	Data_Get_Struct(self, HermannInstanceConfig, consumerConfig);
 
-	if(consumerConfig->topic==NULL) {
+	if (consumerConfig->topic==NULL) {
 			fprintf(stderr, "Topic is null!");
 			return;
 	}
 
-	if(!consumerConfig->isInitialized) {
+	if (!consumerConfig->isInitialized) {
 		consumer_init_kafka(consumerConfig);
 	}
 
 	/* Start consuming */
-	if (rd_kafka_consume_start(consumerConfig->rkt, consumerConfig->partition, consumerConfig->start_offset) == -1){
+	if (rd_kafka_consume_start(consumerConfig->rkt, consumerConfig->partition, consumerConfig->start_offset) == -1) {
 		fprintf(stderr, "%% Failed to start consuming: %s\n",
 			rd_kafka_err2str(rd_kafka_errno2err(errno)));
 		rb_raise(rb_eRuntimeError,
@@ -429,7 +447,7 @@ void producer_init_kafka(HermannInstanceConfig* config) {
 	rd_kafka_set_logger(config->rk, logger);
 	rd_kafka_set_log_level(config->rk, LOG_DEBUG);
 
-	if(rd_kafka_brokers_add(config->rk, config->brokers) == 0) {
+	if (rd_kafka_brokers_add(config->rk, config->brokers) == 0) {
 		/* TODO: Use proper logger */
 		fprintf(stderr, "%% No valid brokers specified\n");
 		rb_raise(rb_eRuntimeError, "No valid brokers specified");
@@ -440,7 +458,7 @@ void producer_init_kafka(HermannInstanceConfig* config) {
 	config->rkt = rd_kafka_topic_new(config->rk, config->topic, config->topic_conf);
 
 	/* Set the partitioner callback */
-	rd_kafka_topic_conf_set_partitioner_cb( config->topic_conf, producer_paritioner_callback );
+	rd_kafka_topic_conf_set_partitioner_cb( config->topic_conf, producer_partitioner_callback);
 
 	/* We're now initialized */
 	config->isInitialized = 1;
@@ -468,21 +486,22 @@ static VALUE producer_push_single(VALUE self, VALUE message) {
 
 	Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
 
-	if(producerConfig->topic==NULL) {
+	if (producerConfig->topic==NULL) {
 		fprintf(stderr, "Topic is null!");
 		return self;
 	}
 
-   	if(!producerConfig->isInitialized) {
-   		producer_init_kafka(producerConfig);
+   	if (!producerConfig->isInitialized) {
+		producer_init_kafka(producerConfig);
 	}
 
 	char *msg = StringValueCStr(message);
 	strcpy(buf, msg);
 
 	size_t len = strlen(buf);
-	if (buf[len-1] == '\n')
+	if (buf[len-1] == '\n') {
 		buf[--len] = '\0';
+	}
 
 #ifdef TRACE
 	fprintf(stderr, "producer_push_single::before_produce message1\n");
@@ -492,15 +511,17 @@ static VALUE producer_push_single(VALUE self, VALUE message) {
 #endif
 
 	/* Send/Produce message. */
-	if (rd_kafka_produce(producerConfig->rkt, producerConfig->partition, RD_KAFKA_MSG_F_COPY,
-		/* Payload and length */
-		buf, len,
-		/* Optional key and its length */
-		NULL, 0,
-		/* Message opaque, provided in
-		* delivery report callback as
-		* msg_opaque. */
-		NULL) == -1) {
+	if (-1 == rd_kafka_produce(producerConfig->rkt,
+						 producerConfig->partition,
+						 RD_KAFKA_MSG_F_COPY,
+						 /* Payload and length */
+						 buf, len,
+						 /* Optional key and its length */
+						 NULL, 0,
+						 /* Message opaque, provided in
+						 * delivery report callback as
+						 * msg_opaque. */
+						 NULL)) {
 
 		fprintf(stderr, "%% Failed to produce to topic %s partition %i: %s\n",
 					rd_kafka_topic_name(producerConfig->rkt), producerConfig->partition,
@@ -528,7 +549,7 @@ static VALUE producer_push_single(VALUE self, VALUE message) {
  *
  *  @param  p   void*   the instance of an HermannInstanceConfig to be freed from allocated memory.
  */
-static void consumer_free(void * p) {
+static void consumer_free(void *p) {
 
 	HermannInstanceConfig* config = (HermannInstanceConfig *)p;
 
@@ -537,11 +558,11 @@ static void consumer_free(void * p) {
 #endif
 
 	// the p *should* contain a pointer to the consumerConfig which also must be freed
-	if(config->rkt != NULL) {
+	if (config->rkt != NULL) {
 		rd_kafka_topic_destroy(config->rkt);
 	}
 
-	if(config->rk != NULL) {
+	if (config->rk != NULL) {
 		rd_kafka_destroy(config->rk);
 	}
 
@@ -601,7 +622,10 @@ static VALUE consumer_allocate(VALUE klass) {
  *  @param  brokers	 VALUE   a Ruby string containing list of host:port
  *  @param  partition   VALUE   a Ruby number
  */
-static VALUE consumer_initialize(VALUE self, VALUE topic, VALUE brokers, VALUE partition) {
+static VALUE consumer_initialize(VALUE self,
+								 VALUE topic,
+								 VALUE brokers,
+								 VALUE partition) {
 
 	HermannInstanceConfig* consumerConfig;
 	char* topicPtr;
@@ -636,7 +660,8 @@ static VALUE consumer_initialize(VALUE self, VALUE topic, VALUE brokers, VALUE p
  *  @param  orig	VALUE   the Ruby Consumer instance (with configuration) as source
  *
  */
-static VALUE consumer_init_copy(VALUE copy, VALUE orig) {
+static VALUE consumer_init_copy(VALUE copy,
+								VALUE orig) {
 	HermannInstanceConfig* orig_config;
 	HermannInstanceConfig* copy_config;
 
@@ -644,7 +669,7 @@ static VALUE consumer_init_copy(VALUE copy, VALUE orig) {
 	fprintf(stderr, "consumer_init_copy\n");
 #endif
 
-	if(copy == orig) {
+	if (copy == orig) {
 		return copy;
 	}
 
@@ -668,7 +693,7 @@ static VALUE consumer_init_copy(VALUE copy, VALUE orig) {
  *
  *  @param  p   void*   the instance's configuration struct
  */
-static void producer_free(void * p) {
+static void producer_free(void *p) {
 
 	HermannInstanceConfig* config;
 
@@ -678,17 +703,17 @@ static void producer_free(void * p) {
 
 	config = (HermannInstanceConfig *)p;
 
-	if(NULL==p) {
+	if (NULL == p) {
 		return;
 	}
 
 	// Clean up the topic
-	if(config->rkt != NULL) {
+	if (NULL != config->rkt) {
 		rd_kafka_topic_destroy(config->rkt);
 	}
 
 	// Take care of the producer instance
-	if(config->rk != NULL) {
+	if (NULL != config->rk) {
 		rd_kafka_destroy(config->rk);
 	}
 
@@ -744,7 +769,9 @@ static VALUE producer_allocate(VALUE klass) {
  *  @param  topic   VALUE   the Ruby string naming the topic
  *  @param  brokers VALUE   a Ruby string containing host:port pairs separated by commas
  */
-static VALUE producer_initialize(VALUE self, VALUE topic, VALUE brokers) {
+static VALUE producer_initialize(VALUE self,
+								 VALUE topic,
+								 VALUE brokers) {
 
 	HermannInstanceConfig* producerConfig;
 	char* topicPtr;
@@ -757,7 +784,7 @@ static VALUE producer_initialize(VALUE self, VALUE topic, VALUE brokers) {
 	topicPtr = StringValuePtr(topic);
 	brokersPtr = StringValuePtr(brokers);
 	Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
-	
+
 	producerConfig->topic = topicPtr;
 	producerConfig->brokers = brokersPtr;
 	/** Using RD_KAFKA_PARTITION_UA specifies we want the partitioner callback to be called to determine the target
@@ -779,7 +806,8 @@ static VALUE producer_initialize(VALUE self, VALUE topic, VALUE brokers) {
  *  @param  copy	VALUE   destination Producer
  *  @param  orign   VALUE   source Producer
  */
-static VALUE producer_init_copy(VALUE copy, VALUE orig) {
+static VALUE producer_init_copy(VALUE copy,
+								VALUE orig) {
 	HermannInstanceConfig* orig_config;
 	HermannInstanceConfig* copy_config;
 
@@ -787,7 +815,7 @@ static VALUE producer_init_copy(VALUE copy, VALUE orig) {
 	fprintf(stderr, "producer_init_copy\n");
 #endif
 
-	if(copy == orig) {
+	if (copy == orig) {
 		return copy;
 	}
 
@@ -812,6 +840,7 @@ static VALUE producer_init_copy(VALUE copy, VALUE orig) {
  * Defines the Producer and Consumer classes.
  */
 void Init_hermann_lib() {
+	VALUE lib_module, c_consumer, c_producer;
 
 #ifdef TRACE
 	fprintf(stderr, "init_hermann_lib\n");
@@ -819,11 +848,11 @@ void Init_hermann_lib() {
 
 	/* Define the module */
 	hermann_module = rb_define_module("Hermann");
-	VALUE lib_module = rb_define_module_under(hermann_module, "Lib");
+	lib_module = rb_define_module_under(hermann_module, "Lib");
 
 
 	/* ---- Define the consumer class ---- */
-	VALUE c_consumer = rb_define_class_under(lib_module, "Consumer", rb_cObject);
+	c_consumer = rb_define_class_under(lib_module, "Consumer", rb_cObject);
 
 	/* Allocate */
 	rb_define_alloc_func(c_consumer, consumer_allocate);
@@ -836,7 +865,7 @@ void Init_hermann_lib() {
 	rb_define_method( c_consumer, "consume", consumer_consume, 0 );
 
 	/* ---- Define the producer class ---- */
-	VALUE c_producer = rb_define_class_under(lib_module, "Producer", rb_cObject);
+	c_producer = rb_define_class_under(lib_module, "Producer", rb_cObject);
 
 	/* Allocate */
 	rb_define_alloc_func(c_producer, producer_allocate);
@@ -847,5 +876,4 @@ void Init_hermann_lib() {
 
 	/* Producer.push_single(msg) */
 	rb_define_method(c_producer, "push_single", producer_push_single, 1);
-
 }
