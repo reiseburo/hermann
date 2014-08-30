@@ -7,17 +7,26 @@ describe Hermann::Producer do
   let(:topic) { 'rspec' }
   let(:brokers) { 'localhost:1337' }
 
-  context 'with a bad broker configuration' do
-    let(:brokers) { '' }
-
-    it 'should raise an exception' do
-      expect {
-        producer.push('anything')
-      }.to raise_error(RuntimeError)
-    end
-  end
 
   describe '#push' do
+    context 'error conditions' do
+      shared_examples 'an error condition' do
+        it 'should raise an exception' do
+          expect { producer.push('rspec') }.to raise_error(RuntimeError)
+        end
+      end
+
+      context 'with a bad broker configuration' do
+        let(:brokers) { '' }
+        it_behaves_like 'an error condition'
+      end
+
+      context 'with a bad topic' do
+        let(:topic) { '' }
+        it_behaves_like 'an error condition'
+      end
+    end
+
     subject(:result) { producer.push(value) }
 
     context 'with a single value' do

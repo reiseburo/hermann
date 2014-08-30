@@ -487,8 +487,10 @@ static VALUE producer_push_single(VALUE self, VALUE message) {
 
 	Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
 
-	if (producerConfig->topic==NULL) {
-		fprintf(stderr, "Topic is null!");
+	if ((NULL == producerConfig->topic) ||
+		(0 == strlen(producerConfig->topic))) {
+		fprintf(stderr, "Topic is null!\n");
+		rb_raise(rb_eRuntimeError, "Topic cannot be empty");
 		return self;
 	}
 
