@@ -306,7 +306,8 @@ void consumer_init_kafka(HermannInstanceConfig* config) {
 	/* Add brokers */
 	if (rd_kafka_brokers_add(config->rk, config->brokers) == 0) {
 		fprintf(stderr, "%% No valid brokers specified\n");
-		exit(1);
+		rb_raise(rb_eRuntimeError, "No valid brokers specified");
+		return;
 	}
 
 	/* Create topic */

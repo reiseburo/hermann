@@ -11,14 +11,20 @@ describe Hermann::Consumer do
   it { should respond_to :consume }
 
   describe '#consume' do
+    shared_examples 'an error condition' do
+      it 'should raise an exception' do
+        expect { consumer.consume }.to raise_error(RuntimeError)
+      end
+    end
+
     context 'with a bad partition' do
       let(:partition) { -1 }
+      it_behaves_like 'an error condition'
+    end
 
-      it 'should raise an exception' do
-        expect {
-          consumer.consume
-        }.to raise_error(RuntimeError)
-      end
+    context 'with a bad broker' do
+      let(:brokers) { '' }
+      it_behaves_like 'an error condition'
     end
   end
 end
