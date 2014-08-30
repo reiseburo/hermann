@@ -41,14 +41,15 @@
  *
  * Log the contents of the configuration to the provided stream.
  */
-void fprintf_hermann_instance_config(HermannInstanceConfig* config, FILE* outputStream) {
+void fprintf_hermann_instance_config(HermannInstanceConfig *config,
+									 FILE *outputStream) {
 
-	const char* topic;
-	const char* brokers;
-	int isRkSet;
-	int isRktSet;
-	int partition;
-	int isInitialized;
+	const char *topic = NULL;
+	const char *brokers = NULL;
+	int isRkSet = -1;
+	int isRktSet = -1;
+	int partition = -1;
+	int isInitialized = -1;
 
 	if (NULL == config) {
 		fprintf(outputStream, "NULL configuration");
@@ -148,7 +149,7 @@ static void hexdump(FILE *fp,
 					const void *ptr,
 					size_t len) {
 	const char *p = (const char *)ptr;
-	int of = 0;
+	unsigned int of = 0;
 
 
 	if (name) {
@@ -158,10 +159,10 @@ static void hexdump(FILE *fp,
 	for (of = 0 ; of < len ; of += 16) {
 		char hexen[16*3+1];
 		char charen[16+1];
-		int hof = 0;
+		unsigned int hof = 0;
 
-		int cof = 0;
-		int i;
+		unsigned int cof = 0;
+		unsigned int i;
 
 		for (i = of ; i < of + 16 && i < len ; i++) {
 			hof += sprintf(hexen+hof, "%02x ", p[i] & 0xff);
@@ -319,8 +320,14 @@ void consumer_init_kafka(HermannInstanceConfig* config) {
 
 // Ruby gem extensions
 
+#ifdef RB_THREAD_BLOCKING_REGION
+/* NOTE: We only need this method defined if RB_THREAD_BLOCKING_REGION is
+ * defined, otherwise it's unused
+ */
+
 /**
- * Callback invoked if Ruby needs to stop our Consumer's IO loop for any reason (system exit, etc.)
+ * Callback invoked if Ruby needs to stop our Consumer's IO loop for any reason
+ * (system exit, etc.)
  */
 static void consumer_consume_stop_callback(void *ptr) {
 	HermannInstanceConfig* config = (HermannInstanceConfig*)ptr;
@@ -331,6 +338,7 @@ static void consumer_consume_stop_callback(void *ptr) {
 
 	config->run = 0;
 }
+#endif
 
 /**
  * Loop on a timeout to receive messages from Kafka.  When the consumer_consume_stop_callback is invoked by Ruby,
@@ -343,8 +351,6 @@ void consumer_consume_loop(HermannInstanceConfig* consumerConfig) {
 #endif
 
 	while (consumerConfig->run) {
-		rd_kafka_message_t *rkmessage;
-
 		if (rd_kafka_consume_callback(consumerConfig->rkt, consumerConfig->partition,
 										  1000/*timeout*/,
 										  msg_consume,
@@ -399,7 +405,10 @@ static VALUE consumer_consume(VALUE self) {
 	 *
 	 *  If Ruby needs to interrupt the consumer loop, the stop callback will be invoked and the loop should exit.
 	 */
-	rb_thread_blocking_region(consumer_consume_loop, consumerConfig, consumer_consume_stop_callback, consumerConfig);
+	rb_thread_blocking_region(consumer_consume_loop,
+							  consumerConfig,
+							  consumer_consume_stop_callback,
+							  consumerConfig);
 #else
 	consumer_consume_loop(consumerConfig);
 #endif
@@ -480,6 +489,8 @@ static VALUE producer_push_single(VALUE self, VALUE message) {
 
 	HermannInstanceConfig* producerConfig;
 	char buf[2048];
+	char *msg;
+	size_t len;
 
 #ifdef TRACE
 	fprintf(stderr, "producer_push_single\n");
@@ -498,10 +509,11 @@ static VALUE producer_push_single(VALUE self, VALUE message) {
 		producer_init_kafka(producerConfig);
 	}
 
-	char *msg = StringValueCStr(message);
+	msg = StringValueCStr(message);
+	/* XXX: UNSAFE */
 	strcpy(buf, msg);
 
-	size_t len = strlen(buf);
+	len = strlen(buf);
 	if (buf[len-1] == '\n') {
 		buf[--len] = '\0';
 	}
