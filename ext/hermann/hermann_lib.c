@@ -2,6 +2,9 @@
  * hermann_lib.c - Ruby wrapper for the librdkafka library
  *
  * Copyright (c) 2014 Stan Campbell
+ * Copyright (c) 2014 Lookout, Inc.
+ * Copyright (c) 2014 R. Tyler Croy
+ *
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,22 +32,6 @@
 /* Much of the librdkafka library calls were lifted from rdkafka_example.c */
 
 #include "hermann_lib.h"
-
-/**
- * Utility functions
- */
-
-
-/**
- * Convenience function
- *
- * @param msg   char*	   the string to be logged under debugging.
- */
-void log_debug(char* msg) {
-	if(DEBUG) {
-		fprintf(stderr, "%s\n", msg);
-	}
-}
 
 /**
  * Convenience function
@@ -441,8 +428,10 @@ void producer_init_kafka(HermannInstanceConfig* config) {
 	rd_kafka_set_log_level(config->rk, LOG_DEBUG);
 
 	if(rd_kafka_brokers_add(config->rk, config->brokers) == 0) {
+		/* TODO: Use proper logger */
 		fprintf(stderr, "%% No valid brokers specified\n");
-		exit(1);
+		rb_raise(rb_eRuntimeError, "No valid brokers specified");
+		return;
 	}
 
 	/* Create topic */
