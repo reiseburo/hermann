@@ -13,5 +13,5 @@ end
 RSpec::Core::RakeTask.new(:spec)
 
 task :build => [:compile]
-task :default => [:compile, :spec]
+task :default => [:clean, :build, :spec]
 
