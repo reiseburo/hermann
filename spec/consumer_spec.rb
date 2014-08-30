@@ -11,13 +11,14 @@ describe Hermann::Consumer do
   it { should respond_to :consume }
 
   describe '#consume' do
-    # XXX: MUST BE FIXED
-    #context 'with a bad partition' do
-    #  let(:partition) { -1 }
+    context 'with a bad partition' do
+      let(:partition) { -1 }
 
-    #  it 'should raise an exception' do
-    #    consumer.consume
-    #  end
-    #end
+      it 'should raise an exception' do
+        expect {
+          consumer.consume
+        }.to raise_error(RuntimeError)
+      end
+    end
   end
 end

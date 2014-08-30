@@ -366,7 +366,9 @@ static VALUE consumer_consume(VALUE self) {
 	if (rd_kafka_consume_start(consumerConfig->rkt, consumerConfig->partition, consumerConfig->start_offset) == -1){
 		fprintf(stderr, "%% Failed to start consuming: %s\n",
 			rd_kafka_err2str(rd_kafka_errno2err(errno)));
-		exit(1);
+		rb_raise(rb_eRuntimeError,
+				rd_kafka_err2str(rd_kafka_errno2err(errno)));
+		return Qnil;
 	}
 
 #ifdef RB_THREAD_BLOCKING_REGION
