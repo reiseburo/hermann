@@ -1,5 +1,7 @@
 # Hermann
 
+[![Gitter chat](https://badges.gitter.im/lookout/Hermann.png)](https://gitter.im/lookout/Hermann)
+
 A Ruby gem implementing a Kafka Publisher and Consumer
 
 This library wraps the
