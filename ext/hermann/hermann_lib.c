@@ -558,6 +558,20 @@ static VALUE producer_push_single(VALUE self, VALUE message) {
 	return self;
 }
 
+/**
+ * producer_tick
+ *
+ * This function is responsible for ticking the librdkafka reactor so we can
+ * get feedback from the librdkafka threads back into the Ruby environment
+ *
+ *  @param  self	VALUE   the Ruby producer instance
+ *  @param  message VALUE   A Ruby FixNum of how long we should wait on librdkafka
+ */
+static VALUE producer_tick(VALUE self, VALUE timeout) {
+
+	return self;
+}
+
 
 /**
  *  consumer_free
@@ -893,4 +907,7 @@ void Init_hermann_lib() {
 
 	/* Producer.push_single(msg) */
 	rb_define_method(c_producer, "push_single", producer_push_single, 1);
+
+	/* Producer.tick */
+	rb_define_method(c_producer, "tick", producer_tick, 1);
 }
