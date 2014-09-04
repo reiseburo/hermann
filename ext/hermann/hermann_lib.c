@@ -491,9 +491,6 @@ void producer_init_kafka(HermannInstanceConfig* config) {
 static VALUE producer_push_single(VALUE self, VALUE message) {
 
 	HermannInstanceConfig* producerConfig;
-	char buf[2048];
-	char *msg;
-	size_t len;
 
 #ifdef TRACE
 	fprintf(stderr, "producer_push_single\n");
@@ -512,15 +509,6 @@ static VALUE producer_push_single(VALUE self, VALUE message) {
 		producer_init_kafka(producerConfig);
 	}
 
-	msg = StringValueCStr(message);
-	/* XXX: UNSAFE */
-	strcpy(buf, msg);
-
-	len = strlen(buf);
-	if (buf[len-1] == '\n') {
-		buf[--len] = '\0';
-	}
-
 #ifdef TRACE
 	fprintf(stderr, "producer_push_single::before_produce message1\n");
 	fprintf_hermann_instance_config(producerConfig, stderr);
@@ -533,7 +521,8 @@ static VALUE producer_push_single(VALUE self, VALUE message) {
 						 producerConfig->partition,
 						 RD_KAFKA_MSG_F_COPY,
 						 /* Payload and length */
-						 buf, len,
+						 rb_string_value_cstr(&message),
+						 RSTRING_LENINT(message),
 						 /* Optional key and its length */
 						 NULL, 0,
 						 /* Message opaque, provided in
