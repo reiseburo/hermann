@@ -252,8 +252,11 @@ static void msg_consume(rd_kafka_message_t *rkmessage,
 		rb_yield(value);
 	}
 	else {
-		if (DEBUG) {
-			fprintf(stderr, "No block given\n"); // todo: should this be an error?
+	    VALUE value = rb_str_new((char *)rkmessage->payload, rkmessage->len);
+		// If there is a defined executable block, provide the value to it
+		ID sym_method_call = rb_intern("call");
+		if(NULL != cfg->block) {
+            rb_funcall(*(cfg->block), sym_method_call, 1, value);
 		}
 	}
 }
@@ -378,8 +381,9 @@ void consumer_consume_loop(HermannInstanceConfig* consumerConfig) {
  * Begin listening on the configured topic for messages.  msg_consume will be called on each message received.
  *
  * @param   VALUE   self	the Ruby object for this consumer
+ * @param   VALUE   block   the Ruby object (a Proc) referring to the passed block
  */
-static VALUE consumer_consume(VALUE self) {
+static VALUE consumer_consume(VALUE self, VALUE block) {
 
 	HermannInstanceConfig* consumerConfig;
 
@@ -399,6 +403,9 @@ static VALUE consumer_consume(VALUE self) {
 	if (!consumerConfig->isInitialized) {
 		consumer_init_kafka(consumerConfig);
 	}
+
+	/* If present, save the executable block in the context */
+	consumerConfig->block = &block;
 
 	/* Start consuming */
 	if (rd_kafka_consume_start(consumerConfig->rkt, consumerConfig->partition, consumerConfig->start_offset) == -1) {
@@ -638,6 +645,7 @@ static VALUE consumer_allocate(VALUE klass) {
 	consumerConfig->debug = NULL;
 	consumerConfig->start_offset = -1;
 	consumerConfig->do_conf_dump = -1;
+	consumerConfig->block = NULL;
 	consumerConfig->run = 0;
 	consumerConfig->exit_eof = 0;
 	consumerConfig->quiet = 0;
@@ -788,6 +796,7 @@ static VALUE producer_allocate(VALUE klass) {
 	producerConfig->debug = NULL;
 	producerConfig->start_offset = -1;
 	producerConfig->do_conf_dump = -1;
+	producerConfig->block = NULL;
 	producerConfig->run = 0;
 	producerConfig->exit_eof = 0;
 	producerConfig->quiet = 0;
@@ -900,7 +909,7 @@ void Init_hermann_lib() {
 	rb_define_method(c_consumer, "initialize_copy", consumer_init_copy, 1);
 
 	/* Consumer has method 'consume' */
-	rb_define_method( c_consumer, "consume", consumer_consume, 0 );
+	rb_define_method( c_consumer, "consume", consumer_consume, 1 );
 
 	/* ---- Define the producer class ---- */
 	c_producer = rb_define_class_under(lib_module, "Producer", rb_cObject);

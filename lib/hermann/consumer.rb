@@ -12,8 +12,13 @@ module Hermann
       @internal = Hermann::Lib::Consumer.new(topic, brokers, partition)
     end
 
-    def consume(&block)
-      @internal.consume(&block)
+    def consume
+      begin
+        proc = Proc.new # obtain reference to any passed block
+      rescue
+        proc = NIL
+      end
+      @internal.consume(proc)
     end
   end
 end

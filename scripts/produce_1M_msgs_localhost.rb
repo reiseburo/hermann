@@ -1,6 +1,6 @@
 require 'rubygems'
 require 'lib/hermann'
-require 'lib/hermann/consumer'
+require 'lib/hermann/producer'
 
 p = Hermann::Producer.new("lms_messages", "localhost:9092")
 arr = (0..1000000).to_a.map { |x| "message_#{x}"}

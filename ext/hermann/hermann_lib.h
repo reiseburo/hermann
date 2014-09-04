@@ -75,6 +75,9 @@ typedef struct HermannInstanceConfig {
 	int64_t start_offset;
 	int do_conf_dump;
 
+	/* Optional pointer to executable block */
+	VALUE *block;
+
 	int run;
 	int exit_eof;
 	int quiet;
