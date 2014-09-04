@@ -33,7 +33,7 @@ describe Hermann::Producer do
 
       it 'should invoke #push_single' do
         expect(producer.internal).to receive(:push_single)
-        expect(result).not_to be_nil
+        expect(result).to be_instance_of Hermann::Result
       end
     end
 
@@ -42,10 +42,13 @@ describe Hermann::Producer do
 
       it 'should invoke #push_single for each element' do
         value.each do |v|
-          expect(producer.internal).to receive(:push_single).with(v)
+          expect(producer.internal).to receive(:push_single).with(v, anything)
         end
 
-        expect(result).not_to be_nil
+        expect(result).to be_instance_of Array
+        result.each do |elem|
+          expect(elem).to be_instance_of Hermann::Result
+        end
       end
     end
   end

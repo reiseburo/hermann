@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__) + '/../lib'))
+
+require 'rubygems'
+require 'hermann/producer'
+
+topic = 'topic'
+brokers = ARGV.first
+
+puts ">> Producer#new('#{topic}', '#{brokers}')"
+
+p = Hermann::Producer.new(topic, brokers)
+
+message = ('b' * 4096) + 'a'
+
+puts ">> Producer#push('#{message}') (#{message.size} bytes)"
+p.push(message)
+
+3.times do
+  p.tick_reactor
+  sleep 1
+end
+
+puts "..exiting"
+

@@ -84,24 +84,34 @@ void fprintf_hermann_instance_config(HermannInstanceConfig *config,
  * Message delivery report callback.
  * Called once for each message.
  *
- * @param rk	rd_kafka_t* instance of producer or consumer
- * @param payload   void*   the payload of the message
- * @param len   size_t  the length of the payload in bytes
- * @param error_code	int
- * @param opaque	void*   optional context
- * @param msg_opaque	void*   it's opaque
  */
 static void msg_delivered(rd_kafka_t *rk,
-						  void *payload,
-						  size_t len,
-						  int error_code,
-						  void *opaque,
-						  void *msg_opaque) {
+						  const rd_kafka_message_t *message,
+						  void *ctx) {
+	VALUE result;
+	VALUE is_error = Qfalse;
+	ID hermann_result_fulfill_method = rb_intern("internal_set_value");
 
-	if (error_code) {
+	if (message->err) {
+		is_error = Qtrue;
 		fprintf(stderr, "%% Message delivery failed: %s\n",
-			rd_kafka_err2str(error_code));
+			rd_kafka_err2str(message->err));
 		/* todo: should raise an error? */
+	}
+
+	/* according to @edenhill rd_kafka_message_t._private is ABI safe to call
+	 * and represents the `msg_opaque` argument passed into `rd_kafka_produce`
+	 */
+	if (NULL != message->_private) {
+		result = (VALUE)message->_private;
+		/* call back into our Hermann::Result if it exists, discarding the
+		* return value
+		*/
+		rb_funcall(result,
+					hermann_result_fulfill_method,
+					2,
+					rb_str_new((char *)message->payload, message->len), /* value */
+					is_error /* is_error */ );
 	}
 }
 
@@ -447,7 +457,7 @@ void producer_init_kafka(HermannInstanceConfig* config) {
 	/* Set up a message delivery report callback.
 	 * It will be called once for each message, either on successful
 	 * delivery to broker, or upon failure to deliver to broker. */
-	rd_kafka_conf_set_dr_cb(config->conf, msg_delivered);
+	rd_kafka_conf_set_dr_msg_cb(config->conf, msg_delivered);
 
 	/* Create Kafka handle */
 	if (!(config->rk = rd_kafka_new(RD_KAFKA_PRODUCER, config->conf, config->errstr, sizeof(config->errstr)))) {
@@ -487,10 +497,16 @@ void producer_init_kafka(HermannInstanceConfig* config) {
  *
  *  @param  self	VALUE   the Ruby producer instance
  *  @param  message VALUE   the ruby String containing the outgoing message.
+ *  @param  result  VALUE   the Hermann::Result object to be fulfilled when the
+ *		push completes
  */
-static VALUE producer_push_single(VALUE self, VALUE message) {
+static VALUE producer_push_single(VALUE self, VALUE message, VALUE result) {
 
 	HermannInstanceConfig* producerConfig;
+	/* Context pointer, pointing to `result`, for the librdkafka delivery
+	 * callback
+	 */
+	void *delivery_ctx = NULL;
 
 #ifdef TRACE
 	fprintf(stderr, "producer_push_single\n");
@@ -516,30 +532,25 @@ static VALUE producer_push_single(VALUE self, VALUE message) {
 	fflush(stderr);
 #endif
 
+	/* Only pass result through if it's non-nil */
+	if (Qnil != result) {
+		delivery_ctx = (void*)result;
+	}
+
 	/* Send/Produce message. */
 	if (-1 == rd_kafka_produce(producerConfig->rkt,
 						 producerConfig->partition,
 						 RD_KAFKA_MSG_F_COPY,
-						 /* Payload and length */
 						 rb_string_value_cstr(&message),
 						 RSTRING_LENINT(message),
-						 /* Optional key and its length */
-						 NULL, 0,
-						 /* Message opaque, provided in
-						 * delivery report callback as
-						 * msg_opaque. */
-						 NULL)) {
-
+						 NULL,
+						 0,
+						 delivery_ctx)) {
 		fprintf(stderr, "%% Failed to produce to topic %s partition %i: %s\n",
 					rd_kafka_topic_name(producerConfig->rkt), producerConfig->partition,
 					rd_kafka_err2str(rd_kafka_errno2err(errno)));
-
-		/* Poll to handle delivery reports */
-		rd_kafka_poll(producerConfig->rk, 10);
+		/* TODO: raise a Ruby exception here, requires a test though */
 	}
-
-	/* Must poll to handle delivery reports */
-	rd_kafka_poll(producerConfig->rk, 0);
 
 #ifdef TRACE
 	fprintf(stderr, "producer_push_single::prior return\n");
@@ -558,6 +569,12 @@ static VALUE producer_push_single(VALUE self, VALUE message) {
  *  @param  message VALUE   A Ruby FixNum of how long we should wait on librdkafka
  */
 static VALUE producer_tick(VALUE self, VALUE timeout) {
+	HermannInstanceConfig *producerConfig;
+
+	Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
+
+	/* XXX: calling with no timeout right now! */
+	rd_kafka_poll(producerConfig->rk, 0);
 
 	return self;
 }
@@ -896,7 +913,7 @@ void Init_hermann_lib() {
 	rb_define_method(c_producer, "initialize_copy", producer_init_copy, 1);
 
 	/* Producer.push_single(msg) */
-	rb_define_method(c_producer, "push_single", producer_push_single, 1);
+	rb_define_method(c_producer, "push_single", producer_push_single, 2);
 
 	/* Producer.tick */
 	rb_define_method(c_producer, "tick", producer_tick, 1);
