@@ -7,7 +7,6 @@ describe Hermann::Producer do
   let(:topic) { 'rspec' }
   let(:brokers) { 'localhost:1337' }
 
-
   describe '#push' do
     context 'error conditions' do
       shared_examples 'an error condition' do
@@ -47,6 +46,56 @@ describe Hermann::Producer do
         end
 
         expect(result).not_to be_nil
+      end
+    end
+  end
+
+
+  describe '#create_result' do
+    subject { producer.create_result }
+
+    it { should be_instance_of Hermann::Result }
+
+    it 'should add the result to the producers children' do
+      expect(producer.children).to be_empty
+      expect(subject).to be_instance_of Hermann::Result
+      expect(producer.children).to_not be_empty
+    end
+  end
+
+  describe '#tick_reactor' do
+    let(:timeout) { 0 }
+    let(:internal) { double('Hermann::Lib::Producer mock') }
+    subject(:tick) { producer.tick_reactor(timeout) }
+
+    before :each do
+      3.times do
+        child = Hermann::Result.new(producer)
+        allow(child).to receive(:reap?) { reap }
+        producer.children << child
+      end
+
+      producer.instance_variable_set(:@internal, internal)
+      expect(internal).to receive(:tick)
+    end
+
+    context 'with no reapable children' do
+      let(:reap) { false }
+
+      it 'should not reap the children' do
+        count = producer.children.size
+        expect(tick).to be_nil
+        expect(producer.children.size).to eql(count)
+      end
+    end
+
+    context 'with reapable children' do
+      let(:reap) { true }
+
+      it 'should not reap the children' do
+        count = producer.children.size
+        expect(tick).to be_nil
+        expect(producer.children.size).to_not eql(count)
       end
     end
   end
