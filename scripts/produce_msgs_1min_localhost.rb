@@ -1,7 +1,8 @@
 # Produce messages for a given amount of time
 
 require 'rubygems'
-require 'hermann'
+require 'lib/hermann'
+require 'lib/hermann/consumer'
 
 stopTime = Time.now + 60 # One minute from now
 p = Hermann::Producer.new("lms_messages")

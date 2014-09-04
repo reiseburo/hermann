@@ -101,6 +101,18 @@ static void msg_delivered(rd_kafka_t *rk,
 	if (error_code) {
 		fprintf(stderr, "%% Message delivery failed: %s\n",
 			rd_kafka_err2str(error_code));
+		/* todo: should raise an error? */
+	} else {
+	    // Yield the data to the Producer's block
+        if (rb_block_given_p()) {
+            VALUE value = rb_str_new((char *)payload, len);
+            rb_yield(value);
+        }
+        else {
+            if (DEBUG) {
+                fprintf(stderr, "No block given\n"); // todo: should this be an error?
+            }
+        }
 	}
 }
 
