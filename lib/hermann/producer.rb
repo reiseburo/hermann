@@ -28,7 +28,7 @@ module Hermann
       if value.kind_of? Array
         value.each { |element| self.push(element) }
       else
-        @internal.push_single(value)
+        @internal.push_single(value, result)
       end
 
       return value
@@ -51,8 +51,10 @@ module Hermann
       # Filter all children who are no longer pending/fulfilled
       @children = @children.reject { |c| c.reap? }
 
+      puts 'ticking'
       # Punt rd_kafka reactor
-      @internal.tick
+      @internal.tick(0)
+      puts 'ticked'
       return nil
     end
   end

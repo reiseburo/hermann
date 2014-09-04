@@ -2,6 +2,7 @@
  * hermann_lib.h - Ruby wrapper for the librdkafka library
  *
  * Copyright (c) 2014 Stan Campbell
+ * Copyright (c) 2014 Lookout, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

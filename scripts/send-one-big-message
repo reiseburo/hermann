@@ -12,11 +12,15 @@ puts ">> Producer#new('#{topic}', '#{brokers}')"
 
 p = Hermann::Producer.new(topic, brokers)
 
-message = ('b' * 2063) + 'a'
+message = ('b' * 4096) + 'a'
 
 puts ">> Producer#push('#{message}') (#{message.size} bytes)"
 p.push(message)
 
+3.times do
+  p.tick_reactor
+  sleep 1
+end
+
 puts "..exiting"
-sleep 2
 

@@ -42,7 +42,7 @@ describe Hermann::Producer do
 
       it 'should invoke #push_single for each element' do
         value.each do |v|
-          expect(producer.internal).to receive(:push_single).with(v)
+          expect(producer.internal).to receive(:push_single).with(v, anything)
         end
 
         expect(result).not_to be_nil
