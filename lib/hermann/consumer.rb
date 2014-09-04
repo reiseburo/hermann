@@ -12,8 +12,8 @@ module Hermann
       @internal = Hermann::Lib::Consumer.new(topic, brokers, partition)
     end
 
-    def consume
-      @internal.consume
+    def consume(&block)
+      @internal.consume(&block)
     end
   end
 end
