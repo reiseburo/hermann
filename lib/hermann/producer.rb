@@ -26,12 +26,14 @@ module Hermann
       result = create_result
 
       if value.kind_of? Array
-        value.each { |element| self.push(element) }
+        return value.map do |element|
+          self.push(element)
+        end
       else
         @internal.push_single(value, result)
       end
 
-      return value
+      return result
     end
 
     # Create a +Hermann::Result+ that is tracked in the Producer's children
@@ -43,19 +45,27 @@ module Hermann
       return @children.last
     end
 
+
     # Tick the underlying librdkafka reacter and clean up any unreaped but
     # reapable children results
     #
+    # @param [FixNum] timeout Milliseconds to block on the internal reactor
     # @return [NilClass]
     def tick_reactor(timeout=0)
       # Filter all children who are no longer pending/fulfilled
       @children = @children.reject { |c| c.reap? }
 
-      puts 'ticking'
       # Punt rd_kafka reactor
-      @internal.tick(0)
-      puts 'ticked'
+      @internal.tick(timeout)
       return nil
+    end
+
+
+    # Creates a new Ruby thread to tick the reactor automatically
+    #
+    # @param [Hermann::Producer] producer
+    # @return [Thread] thread created for ticking the reactor
+    def self.run_reactor_for(producer)
     end
   end
 end

@@ -28,6 +28,11 @@ module Hermann
       return false
     end
 
+    def value(timeout=0)
+      @producer.tick_reactor(timeout)
+      return @value
+    end
+
     # INTERNAL METHOD ONLY. Do not use
     #
     # This method will be invoked by the underlying extension to indicate set
@@ -37,10 +42,10 @@ module Hermann
     # @param [Boolean] is_error True if the result was errored for whatever
     #   reason
     def internal_set_value(value, is_error)
-      puts "Hermann::Result#set_internal_value(#{value.class}:\"#{value}\", error?:#{is_error})"
       @value = value
 
       if is_error
+        puts "Hermann::Result#set_internal_value(#{value.class}:\"#{value}\", error?:#{is_error})"
         @state = :rejected
       else
         @state = :fulfilled

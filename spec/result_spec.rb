@@ -5,6 +5,26 @@ describe Hermann::Result do
   let(:producer) { double('Mock Hermann::Producer') }
   subject(:result) { described_class.new(producer) }
 
+  describe '#value' do
+    let(:timeout) { 0 }
+    subject { result.value(timeout) }
+
+    before :each do
+      # We cannot resolve a value unless we've ticked the reactor at least once
+      expect(producer).to receive(:tick_reactor).with(timeout)
+    end
+
+    context 'by default' do
+      it { should be_nil }
+    end
+
+    context 'after a value has been set internally' do
+      let(:value) { 'rspec-payload-value' }
+      before(:each) { result.internal_set_value(value, false) }
+      it { should eql(value) }
+    end
+  end
+
   describe '#reap?' do
     subject { result.reap? }
 
