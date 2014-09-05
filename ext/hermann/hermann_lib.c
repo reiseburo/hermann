@@ -305,7 +305,7 @@ void consumer_init_kafka(HermannInstanceConfig* config) {
 	if (!(config->rk = rd_kafka_new(RD_KAFKA_CONSUMER, config->conf,
 		config->errstr, sizeof(config->errstr)))) {
 		fprintf(stderr, "%% Failed to create new consumer: %s\n", config->errstr);
-		exit(1);
+		rb_raise(rb_eRuntimeError, "%% Failed to create new consumer: %s\n", config->errstr);
 	}
 
 	/* Set logger */
@@ -463,7 +463,7 @@ void producer_init_kafka(HermannInstanceConfig* config) {
 	if (!(config->rk = rd_kafka_new(RD_KAFKA_PRODUCER, config->conf, config->errstr, sizeof(config->errstr)))) {
 		fprintf(stderr,
 		"%% Failed to create new producer: %s\n", config->errstr);
-		exit(1);
+		rb_raise(rb_eRuntimeError, "%% Failed to create new producer: %s\n", config->errstr);
 	}
 
 	/* Set logger */
