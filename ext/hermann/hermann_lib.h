@@ -50,6 +50,14 @@ static VALUE hermann_module;
 
 static int DEBUG = 0;
 
+// Hold the system signal handler
+static void (*ruby_vm_sighandler)(int) = NULL;
+
+// Global klaxon announcing we're going down
+// 0 - normal operation
+// 1 - we're going down
+static int KLAXON = 0;
+
 // Should we expect rb_thread_blocking_region to be present?
 // #define RB_THREAD_BLOCKING_REGION
 #undef RB_THREAD_BLOCKING_REGION
