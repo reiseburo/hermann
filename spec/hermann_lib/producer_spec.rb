@@ -40,13 +40,13 @@ describe Hermann::Lib::Producer do
       end
 
       it 'should return successfully' do
-        expect(result).to eql(producer)
+        expect(result).to eql(0)
       end
 
       context 'with a zero timeout' do
         it 'should not block on #tick' do
           start = Time.now.to_i
-          expect(result).to eql(producer)
+          expect(result).to eql(0)
           finish = Time.now.to_i
           expect(finish - start).to be < 1
         end
@@ -57,7 +57,7 @@ describe Hermann::Lib::Producer do
         let(:brokers) { 'localhost:1337' }
         it 'should block #tick' do
           start = Time.now.to_i
-          expect(result).to eql(producer)
+          expect(result).to eql(0)
           finish = Time.now.to_i
           expect(finish - start).to be > 1
         end

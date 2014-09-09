@@ -1,5 +1,6 @@
 require 'hermann'
 require 'hermann/result'
+require 'hermann/timeout'
 require 'hermann_lib'
 
 module Hermann
@@ -45,23 +46,48 @@ module Hermann
       return @children.last
     end
 
-
     # Tick the underlying librdkafka reacter and clean up any unreaped but
     # reapable children results
     #
-    # @param [FixNum] timeout Milliseconds to block on the internal reactor
+    # @param [FixNum] timeout Seconds to block on the internal reactor
     # @return [FixNum] Number of +Hermann::Result+ children reaped
     def tick_reactor(timeout=0)
+      # Handle negative numbers, those can be zero
+      if (timeout < 0)
+        timeout = 0
+      end
+
+      # Since we're going to sleep for each second, round any potential floats
+      # off
+      if timeout.kind_of?(Float)
+        timeout = timeout.round
+      end
+
+      Hermann::Timeout.timeout(timeout) do
+        if timeout == 0
+          @internal.tick(0)
+        else
+          timeout.times do
+            events = @internal.tick(0)
+            # If we have events, that probably means we have a result
+            break if events > 0
+            # Sleep in Ruby instead of letting librdkafka handle the thread
+            # sleeping
+            sleep 1
+          end
+        end
+      end
+
+      return reap_children
+    end
+
+    # @return [FixNum] number of children reaped
+    def reap_children
       # Filter all children who are no longer pending/fulfilled
       total_children = @children.size
       @children = @children.reject { |c| c.reap? }
       reaped = total_children - children.size
-
-      # Punt rd_kafka reactor
-      @internal.tick(timeout)
-      return reaped
     end
-
 
     # Creates a new Ruby thread to tick the reactor automatically
     #

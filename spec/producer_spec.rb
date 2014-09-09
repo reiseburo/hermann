@@ -53,7 +53,6 @@ describe Hermann::Producer do
     end
   end
 
-
   describe '#create_result' do
     subject { producer.create_result }
 

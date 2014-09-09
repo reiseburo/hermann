@@ -560,6 +560,7 @@ static VALUE producer_push_single(VALUE self, VALUE message, VALUE result) {
 static VALUE producer_tick(VALUE self, VALUE timeout) {
 	HermannInstanceConfig *producerConfig;
 	long timeout_ms = 0;
+	int events = 0;
 
 	if (Qnil != timeout) {
 		timeout_ms = rb_num2int(timeout);
@@ -578,9 +579,9 @@ static VALUE producer_tick(VALUE self, VALUE timeout) {
 		rb_raise(rb_eRuntimeError, "Cannot call `tick` without having ever sent a message\n");
 	}
 
-	rd_kafka_poll(producerConfig->rk, timeout_ms);
+	events = rd_kafka_poll(producerConfig->rk, timeout_ms);
 
-	return self;
+	return rb_int_new(events);
 }
 
 

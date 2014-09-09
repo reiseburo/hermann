@@ -28,6 +28,12 @@ module Hermann
       return false
     end
 
+    # Access the value of the future
+    #
+    # @param [FixNum] timeout Seconds to wait on the underlying machinery for a
+    #   result
+    # @return [NilClass] nil if no value could be received in the time alotted
+    # @return [Object]
     def value(timeout=0)
       @producer.tick_reactor(timeout)
       return @value
