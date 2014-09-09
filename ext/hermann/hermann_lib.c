@@ -573,6 +573,14 @@ static VALUE producer_tick(VALUE self, VALUE timeout) {
 
 	Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
 
+	/*
+	 * if the producerConfig is not initialized then we never properly called
+	 * producer_push_single, so why are we ticking?
+	 */
+	if (!producerConfig->isInitialized) {
+		rb_raise(rb_eRuntimeError, "Cannot call `tick` without having ever sent a message");
+	}
+
 	/* XXX: calling with no timeout right now! */
 	rd_kafka_poll(producerConfig->rk, 0);
 
