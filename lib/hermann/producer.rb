@@ -52,29 +52,18 @@ module Hermann
     # @param [FixNum] timeout Seconds to block on the internal reactor
     # @return [FixNum] Number of +Hermann::Result+ children reaped
     def tick_reactor(timeout=0)
-      # Handle negative numbers, those can be zero
-      if (timeout < 0)
-        timeout = 0
-      end
+      timeout = rounded_timeout(timeout)
 
-      # Since we're going to sleep for each second, round any potential floats
-      # off
-      if timeout.kind_of?(Float)
-        timeout = timeout.round
-      end
-
-      Hermann::Timeout.timeout(timeout) do
-        if timeout == 0
-          @internal.tick(0)
-        else
-          timeout.times do
-            events = @internal.tick(0)
-            # If we have events, that probably means we have a result
-            break if events > 0
-            # Sleep in Ruby instead of letting librdkafka handle the thread
-            # sleeping
-            sleep 1
-          end
+      if timeout == 0
+        @internal.tick(0)
+      else
+        (timeout * 2).times do
+          # We're going to Thread#sleep in Ruby to avoid a
+          # pthread_cond_timedwait(3) inside of librdkafka
+          events = @internal.tick(0)
+          # If we find events, break out early
+          break if events > 0
+          sleep 0.5
         end
       end
 
@@ -89,11 +78,16 @@ module Hermann
       reaped = total_children - children.size
     end
 
-    # Creates a new Ruby thread to tick the reactor automatically
-    #
-    # @param [Hermann::Producer] producer
-    # @return [Thread] thread created for ticking the reactor
-    def self.run_reactor_for(producer)
+
+    private
+
+    def rounded_timeout(timeout)
+      # Handle negative numbers, those can be zero
+      return 0 if (timeout < 0)
+      # Since we're going to sleep for each second, round any potential floats
+      # off
+      return timeout.round if timeout.kind_of?(Float)
+      return timeout
     end
   end
 end
