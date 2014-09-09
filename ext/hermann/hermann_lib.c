@@ -431,9 +431,10 @@ static VALUE consumer_consume(VALUE self) {
  *
  *  Initialize the producer instance, setting up the Kafka topic and context.
  *
+ *  @param  self    VALUE Instance of the Producer Ruby object
  *  @param  config  HermannInstanceConfig*  the instance configuration associated with this producer.
  */
-void producer_init_kafka(HermannInstanceConfig* config) {
+void producer_init_kafka(VALUE self, HermannInstanceConfig* config) {
 
 	TRACER("initing (%p)\n", config);
 
@@ -441,6 +442,11 @@ void producer_init_kafka(HermannInstanceConfig* config) {
 
 	/* Kafka configuration */
 	config->conf = rd_kafka_conf_new();
+
+
+	/* Add our `self` to the opaque pointer for error and logging callbacks
+	 */
+	rd_kafka_conf_set_opaque(config->conf, (void*)self);
 
 	/* Topic configuration */
 	config->topic_conf = rd_kafka_topic_conf_new();
@@ -451,7 +457,11 @@ void producer_init_kafka(HermannInstanceConfig* config) {
 	rd_kafka_conf_set_dr_msg_cb(config->conf, msg_delivered);
 
 	/* Create Kafka handle */
-	if (!(config->rk = rd_kafka_new(RD_KAFKA_PRODUCER, config->conf, config->errstr, sizeof(config->errstr)))) {
+	if (!(config->rk = rd_kafka_new(RD_KAFKA_PRODUCER,
+									config->conf,
+									config->errstr,
+									sizeof(config->errstr)))) {
+		/* TODO: Use proper logger */
 		fprintf(stderr,
 		"%% Failed to create new producer: %s\n", config->errstr);
 		rb_raise(rb_eRuntimeError, "%% Failed to create new producer: %s\n", config->errstr);
@@ -508,7 +518,7 @@ static VALUE producer_push_single(VALUE self, VALUE message, VALUE result) {
 	}
 
    	if (!producerConfig->isInitialized) {
-		producer_init_kafka(producerConfig);
+		producer_init_kafka(self, producerConfig);
 	}
 
 	TRACER("kafka initialized\n");
