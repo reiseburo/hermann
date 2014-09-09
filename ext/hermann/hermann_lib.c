@@ -88,9 +88,11 @@ void fprintf_hermann_instance_config(HermannInstanceConfig *config,
 static void msg_delivered(rd_kafka_t *rk,
 						  const rd_kafka_message_t *message,
 						  void *ctx) {
-	VALUE result;
+	hermann_push_ctx_t *push_ctx;
 	VALUE is_error = Qfalse;
 	ID hermann_result_fulfill_method = rb_intern("internal_set_value");
+
+	TRACER("ctx: %p, err: %i\n", ctx, message->err);
 
 	if (message->err) {
 		is_error = Qtrue;
@@ -103,15 +105,24 @@ static void msg_delivered(rd_kafka_t *rk,
 	 * and represents the `msg_opaque` argument passed into `rd_kafka_produce`
 	 */
 	if (NULL != message->_private) {
-		result = (VALUE)message->_private;
+		push_ctx = (hermann_push_ctx_t *)message->_private;
+
+		if (!message->err) {
+			/* if we have not errored, great! let's say we're connected */
+			push_ctx->producer->isConnected = 1;
+		}
+
 		/* call back into our Hermann::Result if it exists, discarding the
 		* return value
 		*/
-		rb_funcall(result,
-					hermann_result_fulfill_method,
-					2,
-					rb_str_new((char *)message->payload, message->len), /* value */
-					is_error /* is_error */ );
+		if (NULL != push_ctx->result) {
+			rb_funcall(push_ctx->result,
+						hermann_result_fulfill_method,
+						2,
+						rb_str_new((char *)message->payload, message->len), /* value */
+						is_error /* is_error */ );
+		}
+		free(push_ctx);
 	}
 }
 
@@ -426,6 +437,15 @@ static VALUE consumer_consume(VALUE self) {
 	return Qnil;
 }
 
+
+static void producer_error_callback(rd_kafka_t *rk,
+									int error,
+									const char *reason,
+									void *opaque) {
+	TRACER("error (%i): %s\n", error, reason);
+}
+
+
 /**
  *  producer_init_kafka
  *
@@ -447,6 +467,7 @@ void producer_init_kafka(VALUE self, HermannInstanceConfig* config) {
 	/* Add our `self` to the opaque pointer for error and logging callbacks
 	 */
 	rd_kafka_conf_set_opaque(config->conf, (void*)self);
+	rd_kafka_conf_set_error_cb(config->conf, producer_error_callback);
 
 	/* Topic configuration */
 	config->topic_conf = rd_kafka_topic_conf_new();
@@ -504,11 +525,16 @@ static VALUE producer_push_single(VALUE self, VALUE message, VALUE result) {
 	/* Context pointer, pointing to `result`, for the librdkafka delivery
 	 * callback
 	 */
-	void *delivery_ctx = NULL;
+	hermann_push_ctx_t *delivery_ctx = (hermann_push_ctx_t *)malloc(sizeof(hermann_push_ctx_t));
 
 	TRACER("self: %p, message: %p, result: %p)\n", self, message, result);
 
 	Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
+
+	delivery_ctx->producer = producerConfig;
+	delivery_ctx->result = NULL;
+
+	TRACER("producerConfig: %p\n", producerConfig);
 
 	if ((NULL == producerConfig->topic) ||
 		(0 == strlen(producerConfig->topic))) {
@@ -525,7 +551,8 @@ static VALUE producer_push_single(VALUE self, VALUE message, VALUE result) {
 
 	/* Only pass result through if it's non-nil */
 	if (Qnil != result) {
-		delivery_ctx = (void*)result;
+		delivery_ctx->result = result;
+		TRACER("setting result: %p\n", result);
 	}
 
 	/* Send/Produce message. */
@@ -582,6 +609,56 @@ static VALUE producer_tick(VALUE self, VALUE timeout) {
 	events = rd_kafka_poll(producerConfig->rk, timeout_ms);
 
 	return rb_int_new(events);
+}
+
+
+static VALUE producer_connect(VALUE self, VALUE timeout) {
+	HermannInstanceConfig *producerConfig;
+	rd_kafka_resp_err_t err;
+	VALUE result = Qfalse;
+	int timeout_ms = rb_num2int(timeout);
+	struct rd_kafka_metadata *data = NULL;
+
+	Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
+
+	if (!producerConfig->isInitialized) {
+		producer_init_kafka(self, producerConfig);
+	}
+
+	err = rd_kafka_metadata(producerConfig->rk,
+									0,
+								   producerConfig->rkt,
+								   &data,
+								   timeout_ms);
+	TRACER("err: %s (%i)\n", rd_kafka_err2str(err), err);
+	
+	if (RD_KAFKA_RESP_ERR_NO_ERROR == err) {
+		TRACER("brokers: %i, topics: %i\n",
+				data->broker_cnt,
+				data->topic_cnt);
+		producerConfig->isConnected = 1;
+		result = Qtrue;
+	}
+
+	rd_kafka_metadata_destroy(data);
+
+	return result;
+}
+
+static VALUE producer_is_connected(VALUE self) {
+	HermannInstanceConfig *producerConfig;
+
+	Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
+
+	if (!producerConfig->isInitialized) {
+		return Qfalse;
+	}
+
+	if (!producerConfig->isConnected) {
+		return Qfalse;
+	}
+
+	return Qtrue;
 }
 
 
@@ -782,6 +859,7 @@ static VALUE producer_allocate(VALUE klass) {
 	producerConfig->exit_eof = 0;
 	producerConfig->quiet = 0;
 	producerConfig->isInitialized = 0;
+	producerConfig->isConnected = 0;
 
 	obj = Data_Wrap_Struct(klass, 0, producer_free, producerConfig);
 
@@ -900,4 +978,10 @@ void Init_hermann_lib() {
 
 	/* Producer.tick */
 	rb_define_method(c_producer, "tick", producer_tick, 1);
+
+	/* Producer.connected? */
+	rb_define_method(c_producer, "connected?", producer_is_connected, 0);
+
+	/* Producer.connect */
+	rb_define_method(c_producer, "connect", producer_connect, 1);
 }

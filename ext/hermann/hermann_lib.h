@@ -68,8 +68,7 @@ static 	enum {
 } output = OUTPUT_HEXDUMP;
 
 typedef struct HermannInstanceConfig {
-
-	char* topic;
+	char *topic;
 
 	/* Kafka configuration */
 	rd_kafka_t *rk;
@@ -88,7 +87,17 @@ typedef struct HermannInstanceConfig {
 	int quiet;
 
 	int isInitialized;
+	int isConnected;
 
 } HermannInstanceConfig;
+
+typedef HermannInstanceConfig hermann_conf_t;
+
+typedef struct {
+	/* Hermann::Lib::Producer */
+	hermann_conf_t *producer;
+	/* Hermann::Result */
+	VALUE result;
+} hermann_push_ctx_t;
 
 #endif

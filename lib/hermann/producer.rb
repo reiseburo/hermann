@@ -16,6 +16,16 @@ module Hermann
       @children = []
     end
 
+    # @return [Boolean] True if our underlying producer object thinks it's
+    #   connected to a Kafka broker
+    def connected?
+      return @internal.connected?
+    end
+
+    def connect(timeout=0)
+      return @internal.connect(timeout * 1000)
+    end
+
     # Push a value onto the Kafka topic passed to this +Producer+
     #
     # @param [Array] value An array of values to push, will push each one
@@ -27,9 +37,7 @@ module Hermann
       result = create_result
 
       if value.kind_of? Array
-        return value.map do |element|
-          self.push(element)
-        end
+        return value.map { |e| self.push(e) }
       else
         @internal.push_single(value, result)
       end

@@ -5,8 +5,45 @@ describe Hermann::Lib::Producer do
   let(:topic) { 'rspec' }
   let(:brokers) { 'localhost:1337' }
   subject(:producer) { described_class.new(topic, brokers) }
+  let(:timeout) { 3000 }
 
   it { should respond_to :push_single }
+
+  describe '#connect', :type => :integration do
+    subject(:connect) { producer.connect(timeout) }
+
+    it 'should connect' do
+      expect(connect).to be true
+      expect(producer).to be_connected
+    end
+
+    context 'with an non-existing broker' do
+      let(:brokers) { 'localhost:13337' }
+
+      it 'should attempt to connect' do
+        expect(connect).to be false
+        expect(producer).not_to be_connected
+      end
+    end
+  end
+
+  describe '#connected?' do
+    subject { producer.connected? }
+
+    context 'by default' do
+      it { should be false }
+    end
+  end
+
+  describe '#push_single', :type => :integration do
+    subject(:push) { |example| producer.push_single(example.full_description, nil) }
+
+    it 'should return' do
+      expect(push).not_to be_nil
+      producer.tick(timeout)
+      expect(producer).to be_connected
+    end
+  end
 
   describe '#tick' do
     let(:timeout) { 0 }
@@ -30,10 +67,6 @@ describe Hermann::Lib::Producer do
       end
     end
 
-    # NOTE: Not using :type => :integration here to ensure that
-    # rd_kafka_poll() has something to do underneath the covers. Successfull
-    # pushes return too quickly :)
-    ##########################################################################
     context 'with a single queued request' do
       before :each do
         producer.push_single('hello', nil)
@@ -43,6 +76,5 @@ describe Hermann::Lib::Producer do
         expect(result).not_to be_nil
       end
     end
-    ##########################################################################
   end
 end

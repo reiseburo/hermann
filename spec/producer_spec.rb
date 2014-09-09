@@ -7,6 +7,27 @@ describe Hermann::Producer do
   let(:topic) { 'rspec' }
   let(:brokers) { 'localhost:1337' }
 
+  describe '#connected?' do
+    subject { producer.connected? }
+    context 'by default' do
+      before :each do
+        expect(producer.internal).to receive(:connected?).and_call_original
+      end
+
+      it { should be false  }
+    end
+  end
+
+  describe '#connect' do
+    let(:timeout) { 0 }
+    subject(:connect!) { producer.connect(timeout) }
+
+    it 'should delegate connection to the underlying Producer' do
+      expect(producer.internal).to receive(:connect).and_call_original
+      connect!
+    end
+  end
+
   describe '#push' do
     context 'error conditions' do
       shared_examples 'an error condition' do
