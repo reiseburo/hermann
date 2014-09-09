@@ -27,6 +27,7 @@ GEM
       rspec-support (~> 3.0.0)
     rspec-support (3.0.4)
     slop (3.5.0)
+    system_timer (1.2.4)
 
 PLATFORMS
   ruby
@@ -37,3 +38,4 @@ DEPENDENCIES
   rake-compiler
   rspec (~> 3.0.0)
   rspec-its
+  system_timer
