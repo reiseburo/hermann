@@ -50,14 +50,16 @@ module Hermann
     # reapable children results
     #
     # @param [FixNum] timeout Milliseconds to block on the internal reactor
-    # @return [NilClass]
+    # @return [FixNum] Number of +Hermann::Result+ children reaped
     def tick_reactor(timeout=0)
       # Filter all children who are no longer pending/fulfilled
+      total_children = @children.size
       @children = @children.reject { |c| c.reap? }
+      reaped = total_children - children.size
 
       # Punt rd_kafka reactor
       @internal.tick(timeout)
-      return nil
+      return reaped
     end
 
 

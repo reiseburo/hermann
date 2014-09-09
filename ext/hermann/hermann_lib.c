@@ -566,10 +566,18 @@ static VALUE producer_push_single(VALUE self, VALUE message, VALUE result) {
  * get feedback from the librdkafka threads back into the Ruby environment
  *
  *  @param  self	VALUE   the Ruby producer instance
- *  @param  message VALUE   A Ruby FixNum of how long we should wait on librdkafka
+ *  @param  message VALUE   A Ruby FixNum of how many ms we should wait on librdkafka
  */
 static VALUE producer_tick(VALUE self, VALUE timeout) {
 	HermannInstanceConfig *producerConfig;
+	long timeout_ms = 0;
+
+	if (Qnil != timeout) {
+		timeout_ms = rb_num2int(timeout);
+	}
+	else {
+		rb_raise(rb_eArgError, "Cannot call `tick` with a nil timeout!\n");
+	}
 
 	Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
 
@@ -578,11 +586,10 @@ static VALUE producer_tick(VALUE self, VALUE timeout) {
 	 * producer_push_single, so why are we ticking?
 	 */
 	if (!producerConfig->isInitialized) {
-		rb_raise(rb_eRuntimeError, "Cannot call `tick` without having ever sent a message");
+		rb_raise(rb_eRuntimeError, "Cannot call `tick` without having ever sent a message\n");
 	}
 
-	/* XXX: calling with no timeout right now! */
-	rd_kafka_poll(producerConfig->rk, 0);
+	rd_kafka_poll(producerConfig->rk, timeout_ms);
 
 	return self;
 }

@@ -87,7 +87,7 @@ describe Hermann::Producer do
 
       it 'should not reap the children' do
         count = producer.children.size
-        expect(tick).to be_nil
+        expect(tick).to eql(0)
         expect(producer.children.size).to eql(count)
       end
     end
@@ -97,7 +97,7 @@ describe Hermann::Producer do
 
       it 'should not reap the children' do
         count = producer.children.size
-        expect(tick).to be_nil
+        expect(tick).to eql(count)
         expect(producer.children.size).to_not eql(count)
       end
     end
