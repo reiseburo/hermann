@@ -289,9 +289,8 @@ static void logger(const rd_kafka_t *rk,
  * @param   config  HermannInstanceConfig*  pointer to the instance configuration for this producer or consumer
  */
 void consumer_init_kafka(HermannInstanceConfig* config) {
-#ifdef TRACE
-	fprintf(stderr, "consumer_init_kafka");
-#endif
+
+	TRACER("configuring rd_kafka\n");
 
 	config->quiet = !isatty(STDIN_FILENO);
 
@@ -343,9 +342,7 @@ void consumer_init_kafka(HermannInstanceConfig* config) {
 static void consumer_consume_stop_callback(void *ptr) {
 	HermannInstanceConfig* config = (HermannInstanceConfig*)ptr;
 
-#ifdef TRACE
-	fprintf(stderr, "consumer_consume_stop_callback");
-#endif
+	TRACER("stopping callback (%p)\n", ptr);
 
 	config->run = 0;
 }
@@ -357,9 +354,7 @@ static void consumer_consume_stop_callback(void *ptr) {
  */
 void consumer_consume_loop(HermannInstanceConfig* consumerConfig) {
 
-#ifdef TRACE
-	fprintf(stderr, "consumer_consume_loop");
-#endif
+	TRACER("\n");
 
 	while (consumerConfig->run) {
 		if (rd_kafka_consume_callback(consumerConfig->rkt, consumerConfig->partition,
@@ -383,9 +378,7 @@ static VALUE consumer_consume(VALUE self) {
 
 	HermannInstanceConfig* consumerConfig;
 
-#ifdef TRACE
-	fprintf(stderr, "consumer_consume");
-#endif
+	TRACER("starting consume\n");
 
 	Data_Get_Struct(self, HermannInstanceConfig, consumerConfig);
 
@@ -442,9 +435,7 @@ static VALUE consumer_consume(VALUE self) {
  */
 void producer_init_kafka(HermannInstanceConfig* config) {
 
-#ifdef TRACE
-	fprintf(stderr, "producer_init_kafka\n");
-#endif
+	TRACER("initing (%p)\n", config);
 
 	config->quiet = !isatty(STDIN_FILENO);
 
@@ -486,10 +477,7 @@ void producer_init_kafka(HermannInstanceConfig* config) {
 	/* We're now initialized */
 	config->isInitialized = 1;
 
-#ifdef TRACE
-	fprintf(stderr, "producer_init_kafka::END\n");
-	fprintf_hermann_instance_config(config, stderr);
-#endif
+	TRACER("completed kafka init\n");
 }
 
 /**
@@ -508,9 +496,7 @@ static VALUE producer_push_single(VALUE self, VALUE message, VALUE result) {
 	 */
 	void *delivery_ctx = NULL;
 
-#ifdef TRACE
-	fprintf(stderr, "producer_push_single\n");
-#endif
+	TRACER("self: %p, message: %p, result: %p)\n", self, message, result);
 
 	Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
 
@@ -525,12 +511,7 @@ static VALUE producer_push_single(VALUE self, VALUE message, VALUE result) {
 		producer_init_kafka(producerConfig);
 	}
 
-#ifdef TRACE
-	fprintf(stderr, "producer_push_single::before_produce message1\n");
-	fprintf_hermann_instance_config(producerConfig, stderr);
-	fprintf(stderr, "producer_push_single::before_produce_message2\n");
-	fflush(stderr);
-#endif
+	TRACER("kafka initialized\n");
 
 	/* Only pass result through if it's non-nil */
 	if (Qnil != result) {
@@ -552,9 +533,7 @@ static VALUE producer_push_single(VALUE self, VALUE message, VALUE result) {
 		/* TODO: raise a Ruby exception here, requires a test though */
 	}
 
-#ifdef TRACE
-	fprintf(stderr, "producer_push_single::prior return\n");
-#endif
+	TRACER("returning\n");
 
 	return self;
 }
@@ -685,9 +664,7 @@ static VALUE consumer_initialize(VALUE self,
 	char* brokersPtr;
 	int partitionNo;
 
-#ifdef TRACE
-	fprintf(stderr, "consumer_initialize\n");
-#endif
+	TRACER("initing consumer ruby object\n");
 
 	topicPtr = StringValuePtr(topic);
 	brokersPtr = StringValuePtr(brokers);
@@ -718,10 +695,6 @@ static VALUE consumer_init_copy(VALUE copy,
 	HermannInstanceConfig* orig_config;
 	HermannInstanceConfig* copy_config;
 
-#ifdef TRACE
-	fprintf(stderr, "consumer_init_copy\n");
-#endif
-
 	if (copy == orig) {
 		return copy;
 	}
@@ -748,13 +721,10 @@ static VALUE consumer_init_copy(VALUE copy,
  */
 static void producer_free(void *p) {
 
-	HermannInstanceConfig* config;
+	HermannInstanceConfig* config = (HermannInstanceConfig *)p;
 
-#ifdef TRACE
-	fprintf(stderr, "producer_free\n");
-#endif
+	TRACER("dealloc producer ruby object (%p)\n", p);
 
-	config = (HermannInstanceConfig *)p;
 
 	if (NULL == p) {
 		return;
@@ -784,13 +754,7 @@ static void producer_free(void *p) {
 static VALUE producer_allocate(VALUE klass) {
 
 	VALUE obj;
-	HermannInstanceConfig* producerConfig;
-
-#ifdef TRACE
-	fprintf(stderr, "producer_allocate\n");
-#endif
-
-	producerConfig = ALLOC(HermannInstanceConfig);
+	HermannInstanceConfig* producerConfig =ALLOC(HermannInstanceConfig);
 
 	producerConfig->topic = NULL;
 	producerConfig->rk = NULL;
@@ -830,9 +794,8 @@ static VALUE producer_initialize(VALUE self,
 	char* topicPtr;
 	char* brokersPtr;
 
-#ifdef TRACE
-	fprintf(stderr, "producer_initialize\n");
-#endif
+	TRACER("initialize Producer ruby object\n");
+
 
 	topicPtr = StringValuePtr(topic);
 	brokersPtr = StringValuePtr(brokers);
@@ -864,10 +827,6 @@ static VALUE producer_init_copy(VALUE copy,
 	HermannInstanceConfig* orig_config;
 	HermannInstanceConfig* copy_config;
 
-#ifdef TRACE
-	fprintf(stderr, "producer_init_copy\n");
-#endif
-
 	if (copy == orig) {
 		return copy;
 	}
@@ -895,9 +854,7 @@ static VALUE producer_init_copy(VALUE copy,
 void Init_hermann_lib() {
 	VALUE lib_module, c_consumer, c_producer;
 
-#ifdef TRACE
-	fprintf(stderr, "init_hermann_lib\n");
-#endif
+	TRACER("setting up Hermann::Lib\n");
 
 	/* Define the module */
 	hermann_module = rb_define_module("Hermann");

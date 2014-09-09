@@ -43,7 +43,15 @@
 
 #include <librdkafka/rdkafka.h>
 
-#undef TRACE
+#ifdef TRACE
+#define TRACER(...) do {  \
+	fprintf(stderr, "%i:%s()> ", __LINE__, __PRETTY_FUNCTION__); \
+	fprintf(stderr, __VA_ARGS__); \
+	fflush(stderr); \
+					} while (0)
+#else
+#define TRACER(...) do { } while (0)
+#endif
 
 // Holds the defined Ruby module for Hermann
 static VALUE hermann_module;
