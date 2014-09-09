@@ -542,7 +542,7 @@ static VALUE producer_push_single(VALUE self, VALUE message, VALUE result) {
 						 producerConfig->partition,
 						 RD_KAFKA_MSG_F_COPY,
 						 rb_string_value_cstr(&message),
-						 RSTRING_LENINT(message),
+						 RSTRING_LEN(message),
 						 NULL,
 						 0,
 						 delivery_ctx)) {
