@@ -29,6 +29,8 @@ describe Hermann::Producer do
   end
 
   describe '#push' do
+    subject(:result) { producer.push(value) }
+
     context 'error conditions' do
       shared_examples 'an error condition' do
         it 'should raise an exception' do
@@ -41,13 +43,24 @@ describe Hermann::Producer do
         it_behaves_like 'an error condition'
       end
 
+      context 'with a non-existing broker' do
+        let(:brokers) { 'localhost:13337' }
+        let(:timeout) { 2 }
+        let(:value) { 'rspec' }
+
+        it 'should reject' do
+          future = result
+          expect(future).not_to be_nil
+          producer.tick_reactor(timeout)
+          expect(future).to be_rejected
+        end
+      end
+
       context 'with a bad topic' do
         let(:topic) { '' }
         it_behaves_like 'an error condition'
       end
     end
-
-    subject(:result) { producer.push(value) }
 
     context 'with a single value' do
       let(:value) { 'hello' }

@@ -57,5 +57,18 @@ module Hermann
         @state = :fulfilled
       end
     end
+
+    # INTERNAL METHOD ONLY. Do not use
+    #
+    # This method will set our internal #reason with the details from the
+    # exception
+    #
+    # @param [Exception] exception
+    def internal_set_error(exception)
+      return if exception.nil?
+
+      @reason = exception
+      @state = :rejected
+    end
   end
 end

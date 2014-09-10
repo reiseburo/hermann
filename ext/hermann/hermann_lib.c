@@ -447,6 +447,20 @@ static void producer_error_callback(rd_kafka_t *rk,
 	TRACER("error (%i): %s\n", error, reason);
 
 	conf->isErrored = error;
+
+	if (error) {
+		/* If we have an old error string in here we need to make sure to
+		 * free() it before we allocate a new string
+		 */
+		if (NULL != conf->error) {
+			free(conf->error);
+		}
+
+		/* Grab the length of the string plus the null character */
+		size_t error_length = strnlen(reason, HERMANN_MAX_ERRSTR_LEN) + 1;
+		conf->error = (char *)malloc((sizeof(char) * error_length));
+		(void)strncpy(conf->error, reason, error_length);
+	}
 }
 
 
@@ -589,7 +603,7 @@ static VALUE producer_push_single(VALUE self, VALUE message, VALUE result) {
  *  @param  message VALUE   A Ruby FixNum of how many ms we should wait on librdkafka
  */
 static VALUE producer_tick(VALUE self, VALUE timeout) {
-	HermannInstanceConfig *producerConfig;
+	hermann_conf_t *conf = NULL;
 	long timeout_ms = 0;
 	int events = 0;
 
@@ -600,17 +614,21 @@ static VALUE producer_tick(VALUE self, VALUE timeout) {
 		rb_raise(rb_eArgError, "Cannot call `tick` with a nil timeout!\n");
 	}
 
-	Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
+	Data_Get_Struct(self, hermann_conf_t, conf);
 
 	/*
 	 * if the producerConfig is not initialized then we never properly called
 	 * producer_push_single, so why are we ticking?
 	 */
-	if (!producerConfig->isInitialized) {
+	if (!conf->isInitialized) {
 		rb_raise(rb_eRuntimeError, "Cannot call `tick` without having ever sent a message\n");
 	}
 
-	events = rd_kafka_poll(producerConfig->rk, timeout_ms);
+	events = rd_kafka_poll(conf->rk, timeout_ms);
+
+	if (conf->isErrored) {
+		rb_raise(rb_eStandardError, conf->error);
+	}
 
 	return rb_int_new(events);
 }
@@ -880,6 +898,7 @@ static VALUE producer_allocate(VALUE klass) {
 	producerConfig->isInitialized = 0;
 	producerConfig->isConnected = 0;
 	producerConfig->isErrored = 0;
+	producerConfig->error = NULL;
 
 	obj = Data_Wrap_Struct(klass, 0, producer_free, producerConfig);
 

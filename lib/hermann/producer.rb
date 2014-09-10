@@ -1,6 +1,5 @@
 require 'hermann'
 require 'hermann/result'
-require 'hermann/timeout'
 require 'hermann_lib'
 
 module Hermann
@@ -65,21 +64,20 @@ module Hermann
     # @param [FixNum] timeout Seconds to block on the internal reactor
     # @return [FixNum] Number of +Hermann::Result+ children reaped
     def tick_reactor(timeout=0)
-      timeout = rounded_timeout(timeout)
-
-      if timeout == 0
-        @internal.tick(0)
-      else
-        (timeout * 2).times do
-          # We're going to Thread#sleep in Ruby to avoid a
-          # pthread_cond_timedwait(3) inside of librdkafka
-          events = @internal.tick(0)
-          # If we find events, break out early
-          break if events > 0
-          sleep 0.5
+      begin
+        execute_tick(rounded_timeout(timeout))
+      rescue StandardError => ex
+        @children.each do |child|
+          # Skip over any children that should already be reaped for other
+          # reasons
+          next if child.reap?
+          # Propagate errors to the remaining children
+          child.internal_set_error(ex)
         end
       end
 
+      # Reaping the children at this point will also reap any children marked
+      # as errored by an exception out of #execute_tick
       return reap_children
     end
 
@@ -88,7 +86,8 @@ module Hermann
       # Filter all children who are no longer pending/fulfilled
       total_children = @children.size
       @children = @children.reject { |c| c.reap? }
-      reaped = total_children - children.size
+
+      return (total_children - children.size)
     end
 
 
@@ -101,6 +100,23 @@ module Hermann
       # off
       return timeout.round if timeout.kind_of?(Float)
       return timeout
+    end
+
+    # Perform the actual reactor tick
+    # @raises [StandardError[ in case of underlying failures in librdkafka
+    def execute_tick(timeout)
+      if timeout == 0
+        @internal.tick(0)
+      else
+        (timeout * 2).times do
+          # We're going to Thread#sleep in Ruby to avoid a
+          # pthread_cond_timedwait(3) inside of librdkafka
+          events = @internal.tick(0)
+          # If we find events, break out early
+          break if events > 0
+          sleep 0.5
+        end
+      end
     end
   end
 end
