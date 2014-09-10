@@ -10,7 +10,15 @@ Rake::ExtensionTask.new do |t|
   t.gem_spec = Gem::Specification.load('hermann.gemspec')
 end
 
-RSpec::Core::RakeTask.new(:spec)
+RSpec::Core::RakeTask.new(:spec) do |r|
+  r.rspec_opts = '--tag ~type:integration'
+end
+
+namespace :spec do
+  RSpec::Core::RakeTask.new(:integration) do |r|
+    r.rspec_opts = '--tag type:integration'
+  end
+end
 
 task :build => [:compile]
 task :default => [:clean, :build, :spec]

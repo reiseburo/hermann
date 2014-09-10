@@ -7,6 +7,27 @@ describe Hermann::Producer do
   let(:topic) { 'rspec' }
   let(:brokers) { 'localhost:1337' }
 
+  describe '#connected?' do
+    subject { producer.connected? }
+    context 'by default' do
+      before :each do
+        expect(producer.internal).to receive(:connected?).and_call_original
+      end
+
+      it { should be false  }
+    end
+  end
+
+  describe '#connect' do
+    let(:timeout) { 0 }
+    subject(:connect!) { producer.connect(timeout) }
+
+    it 'should delegate connection to the underlying Producer' do
+      expect(producer.internal).to receive(:connect).and_call_original
+      connect!
+    end
+  end
+
   describe '#push' do
     context 'error conditions' do
       shared_examples 'an error condition' do
@@ -53,7 +74,6 @@ describe Hermann::Producer do
     end
   end
 
-
   describe '#create_result' do
     subject { producer.create_result }
 
@@ -87,7 +107,7 @@ describe Hermann::Producer do
 
       it 'should not reap the children' do
         count = producer.children.size
-        expect(tick).to be_nil
+        expect(tick).to eql(0)
         expect(producer.children.size).to eql(count)
       end
     end
@@ -97,7 +117,7 @@ describe Hermann::Producer do
 
       it 'should not reap the children' do
         count = producer.children.size
-        expect(tick).to be_nil
+        expect(tick).to eql(count)
         expect(producer.children.size).to_not eql(count)
       end
     end

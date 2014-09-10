@@ -43,7 +43,15 @@
 
 #include <librdkafka/rdkafka.h>
 
-#undef TRACE
+#ifdef TRACE
+#define TRACER(...) do {  \
+	fprintf(stderr, "%i:%s()> ", __LINE__, __PRETTY_FUNCTION__); \
+	fprintf(stderr, __VA_ARGS__); \
+	fflush(stderr); \
+					} while (0)
+#else
+#define TRACER(...) do { } while (0)
+#endif
 
 // Holds the defined Ruby module for Hermann
 static VALUE hermann_module;
@@ -60,8 +68,7 @@ static 	enum {
 } output = OUTPUT_HEXDUMP;
 
 typedef struct HermannInstanceConfig {
-
-	char* topic;
+	char *topic;
 
 	/* Kafka configuration */
 	rd_kafka_t *rk;
@@ -80,7 +87,17 @@ typedef struct HermannInstanceConfig {
 	int quiet;
 
 	int isInitialized;
-
+	int isConnected;
+	int isErrored;
 } HermannInstanceConfig;
+
+typedef HermannInstanceConfig hermann_conf_t;
+
+typedef struct {
+	/* Hermann::Lib::Producer */
+	hermann_conf_t *producer;
+	/* Hermann::Result */
+	VALUE result;
+} hermann_push_ctx_t;
 
 #endif

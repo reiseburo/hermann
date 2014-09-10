@@ -1,5 +1,6 @@
 require 'hermann'
 require 'hermann/result'
+require 'hermann/timeout'
 require 'hermann_lib'
 
 module Hermann
@@ -15,6 +16,21 @@ module Hermann
       @children = []
     end
 
+    # @return [Boolean] True if our underlying producer object thinks it's
+    #   connected to a Kafka broker
+    def connected?
+      return @internal.connected?
+    end
+
+    # @return [Boolean] True if the underlying producer object has errored
+    def errored?
+      return @internal.errored?
+    end
+
+    def connect(timeout=0)
+      return @internal.connect(timeout * 1000)
+    end
+
     # Push a value onto the Kafka topic passed to this +Producer+
     #
     # @param [Array] value An array of values to push, will push each one
@@ -26,9 +42,7 @@ module Hermann
       result = create_result
 
       if value.kind_of? Array
-        return value.map do |element|
-          self.push(element)
-        end
+        return value.map { |e| self.push(e) }
       else
         @internal.push_single(value, result)
       end
@@ -45,27 +59,48 @@ module Hermann
       return @children.last
     end
 
-
     # Tick the underlying librdkafka reacter and clean up any unreaped but
     # reapable children results
     #
-    # @param [FixNum] timeout Milliseconds to block on the internal reactor
-    # @return [NilClass]
+    # @param [FixNum] timeout Seconds to block on the internal reactor
+    # @return [FixNum] Number of +Hermann::Result+ children reaped
     def tick_reactor(timeout=0)
-      # Filter all children who are no longer pending/fulfilled
-      @children = @children.reject { |c| c.reap? }
+      timeout = rounded_timeout(timeout)
 
-      # Punt rd_kafka reactor
-      @internal.tick(timeout)
-      return nil
+      if timeout == 0
+        @internal.tick(0)
+      else
+        (timeout * 2).times do
+          # We're going to Thread#sleep in Ruby to avoid a
+          # pthread_cond_timedwait(3) inside of librdkafka
+          events = @internal.tick(0)
+          # If we find events, break out early
+          break if events > 0
+          sleep 0.5
+        end
+      end
+
+      return reap_children
+    end
+
+    # @return [FixNum] number of children reaped
+    def reap_children
+      # Filter all children who are no longer pending/fulfilled
+      total_children = @children.size
+      @children = @children.reject { |c| c.reap? }
+      reaped = total_children - children.size
     end
 
 
-    # Creates a new Ruby thread to tick the reactor automatically
-    #
-    # @param [Hermann::Producer] producer
-    # @return [Thread] thread created for ticking the reactor
-    def self.run_reactor_for(producer)
+    private
+
+    def rounded_timeout(timeout)
+      # Handle negative numbers, those can be zero
+      return 0 if (timeout < 0)
+      # Since we're going to sleep for each second, round any potential floats
+      # off
+      return timeout.round if timeout.kind_of?(Float)
+      return timeout
     end
   end
 end

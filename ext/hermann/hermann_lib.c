@@ -88,9 +88,11 @@ void fprintf_hermann_instance_config(HermannInstanceConfig *config,
 static void msg_delivered(rd_kafka_t *rk,
 						  const rd_kafka_message_t *message,
 						  void *ctx) {
-	VALUE result;
+	hermann_push_ctx_t *push_ctx;
 	VALUE is_error = Qfalse;
 	ID hermann_result_fulfill_method = rb_intern("internal_set_value");
+
+	TRACER("ctx: %p, err: %i\n", ctx, message->err);
 
 	if (message->err) {
 		is_error = Qtrue;
@@ -103,15 +105,24 @@ static void msg_delivered(rd_kafka_t *rk,
 	 * and represents the `msg_opaque` argument passed into `rd_kafka_produce`
 	 */
 	if (NULL != message->_private) {
-		result = (VALUE)message->_private;
+		push_ctx = (hermann_push_ctx_t *)message->_private;
+
+		if (!message->err) {
+			/* if we have not errored, great! let's say we're connected */
+			push_ctx->producer->isConnected = 1;
+		}
+
 		/* call back into our Hermann::Result if it exists, discarding the
 		* return value
 		*/
-		rb_funcall(result,
-					hermann_result_fulfill_method,
-					2,
-					rb_str_new((char *)message->payload, message->len), /* value */
-					is_error /* is_error */ );
+		if (NULL != push_ctx->result) {
+			rb_funcall(push_ctx->result,
+						hermann_result_fulfill_method,
+						2,
+						rb_str_new((char *)message->payload, message->len), /* value */
+						is_error /* is_error */ );
+		}
+		free(push_ctx);
 	}
 }
 
@@ -289,9 +300,8 @@ static void logger(const rd_kafka_t *rk,
  * @param   config  HermannInstanceConfig*  pointer to the instance configuration for this producer or consumer
  */
 void consumer_init_kafka(HermannInstanceConfig* config) {
-#ifdef TRACE
-	fprintf(stderr, "consumer_init_kafka");
-#endif
+
+	TRACER("configuring rd_kafka\n");
 
 	config->quiet = !isatty(STDIN_FILENO);
 
@@ -343,9 +353,7 @@ void consumer_init_kafka(HermannInstanceConfig* config) {
 static void consumer_consume_stop_callback(void *ptr) {
 	HermannInstanceConfig* config = (HermannInstanceConfig*)ptr;
 
-#ifdef TRACE
-	fprintf(stderr, "consumer_consume_stop_callback");
-#endif
+	TRACER("stopping callback (%p)\n", ptr);
 
 	config->run = 0;
 }
@@ -357,9 +365,7 @@ static void consumer_consume_stop_callback(void *ptr) {
  */
 void consumer_consume_loop(HermannInstanceConfig* consumerConfig) {
 
-#ifdef TRACE
-	fprintf(stderr, "consumer_consume_loop");
-#endif
+	TRACER("\n");
 
 	while (consumerConfig->run) {
 		if (rd_kafka_consume_callback(consumerConfig->rkt, consumerConfig->partition,
@@ -383,9 +389,7 @@ static VALUE consumer_consume(VALUE self) {
 
 	HermannInstanceConfig* consumerConfig;
 
-#ifdef TRACE
-	fprintf(stderr, "consumer_consume");
-#endif
+	TRACER("starting consume\n");
 
 	Data_Get_Struct(self, HermannInstanceConfig, consumerConfig);
 
@@ -433,23 +437,41 @@ static VALUE consumer_consume(VALUE self) {
 	return Qnil;
 }
 
+
+static void producer_error_callback(rd_kafka_t *rk,
+									int error,
+									const char *reason,
+									void *opaque) {
+	hermann_conf_t *conf = (hermann_conf_t *)rd_kafka_opaque(rk);
+
+	TRACER("error (%i): %s\n", error, reason);
+
+	conf->isErrored = error;
+}
+
+
 /**
  *  producer_init_kafka
  *
  *  Initialize the producer instance, setting up the Kafka topic and context.
  *
+ *  @param  self    VALUE Instance of the Producer Ruby object
  *  @param  config  HermannInstanceConfig*  the instance configuration associated with this producer.
  */
-void producer_init_kafka(HermannInstanceConfig* config) {
+void producer_init_kafka(VALUE self, HermannInstanceConfig* config) {
 
-#ifdef TRACE
-	fprintf(stderr, "producer_init_kafka\n");
-#endif
+	TRACER("initing (%p)\n", config);
 
 	config->quiet = !isatty(STDIN_FILENO);
 
 	/* Kafka configuration */
 	config->conf = rd_kafka_conf_new();
+
+
+	/* Add our `self` to the opaque pointer for error and logging callbacks
+	 */
+	rd_kafka_conf_set_opaque(config->conf, (void*)config);
+	rd_kafka_conf_set_error_cb(config->conf, producer_error_callback);
 
 	/* Topic configuration */
 	config->topic_conf = rd_kafka_topic_conf_new();
@@ -460,7 +482,11 @@ void producer_init_kafka(HermannInstanceConfig* config) {
 	rd_kafka_conf_set_dr_msg_cb(config->conf, msg_delivered);
 
 	/* Create Kafka handle */
-	if (!(config->rk = rd_kafka_new(RD_KAFKA_PRODUCER, config->conf, config->errstr, sizeof(config->errstr)))) {
+	if (!(config->rk = rd_kafka_new(RD_KAFKA_PRODUCER,
+									config->conf,
+									config->errstr,
+									sizeof(config->errstr)))) {
+		/* TODO: Use proper logger */
 		fprintf(stderr,
 		"%% Failed to create new producer: %s\n", config->errstr);
 		rb_raise(rb_eRuntimeError, "%% Failed to create new producer: %s\n", config->errstr);
@@ -486,10 +512,7 @@ void producer_init_kafka(HermannInstanceConfig* config) {
 	/* We're now initialized */
 	config->isInitialized = 1;
 
-#ifdef TRACE
-	fprintf(stderr, "producer_init_kafka::END\n");
-	fprintf_hermann_instance_config(config, stderr);
-#endif
+	TRACER("completed kafka init\n");
 }
 
 /**
@@ -506,13 +529,16 @@ static VALUE producer_push_single(VALUE self, VALUE message, VALUE result) {
 	/* Context pointer, pointing to `result`, for the librdkafka delivery
 	 * callback
 	 */
-	void *delivery_ctx = NULL;
+	hermann_push_ctx_t *delivery_ctx = (hermann_push_ctx_t *)malloc(sizeof(hermann_push_ctx_t));
 
-#ifdef TRACE
-	fprintf(stderr, "producer_push_single\n");
-#endif
+	TRACER("self: %p, message: %p, result: %p)\n", self, message, result);
 
 	Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
+
+	delivery_ctx->producer = producerConfig;
+	delivery_ctx->result = NULL;
+
+	TRACER("producerConfig: %p\n", producerConfig);
 
 	if ((NULL == producerConfig->topic) ||
 		(0 == strlen(producerConfig->topic))) {
@@ -522,19 +548,15 @@ static VALUE producer_push_single(VALUE self, VALUE message, VALUE result) {
 	}
 
    	if (!producerConfig->isInitialized) {
-		producer_init_kafka(producerConfig);
+		producer_init_kafka(self, producerConfig);
 	}
 
-#ifdef TRACE
-	fprintf(stderr, "producer_push_single::before_produce message1\n");
-	fprintf_hermann_instance_config(producerConfig, stderr);
-	fprintf(stderr, "producer_push_single::before_produce_message2\n");
-	fflush(stderr);
-#endif
+	TRACER("kafka initialized\n");
 
 	/* Only pass result through if it's non-nil */
 	if (Qnil != result) {
-		delivery_ctx = (void*)result;
+		delivery_ctx->result = result;
+		TRACER("setting result: %p\n", result);
 	}
 
 	/* Send/Produce message. */
@@ -552,9 +574,7 @@ static VALUE producer_push_single(VALUE self, VALUE message, VALUE result) {
 		/* TODO: raise a Ruby exception here, requires a test though */
 	}
 
-#ifdef TRACE
-	fprintf(stderr, "producer_push_single::prior return\n");
-#endif
+	TRACER("returning\n");
 
 	return self;
 }
@@ -566,17 +586,98 @@ static VALUE producer_push_single(VALUE self, VALUE message, VALUE result) {
  * get feedback from the librdkafka threads back into the Ruby environment
  *
  *  @param  self	VALUE   the Ruby producer instance
- *  @param  message VALUE   A Ruby FixNum of how long we should wait on librdkafka
+ *  @param  message VALUE   A Ruby FixNum of how many ms we should wait on librdkafka
  */
 static VALUE producer_tick(VALUE self, VALUE timeout) {
+	HermannInstanceConfig *producerConfig;
+	long timeout_ms = 0;
+	int events = 0;
+
+	if (Qnil != timeout) {
+		timeout_ms = rb_num2int(timeout);
+	}
+	else {
+		rb_raise(rb_eArgError, "Cannot call `tick` with a nil timeout!\n");
+	}
+
+	Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
+
+	/*
+	 * if the producerConfig is not initialized then we never properly called
+	 * producer_push_single, so why are we ticking?
+	 */
+	if (!producerConfig->isInitialized) {
+		rb_raise(rb_eRuntimeError, "Cannot call `tick` without having ever sent a message\n");
+	}
+
+	events = rd_kafka_poll(producerConfig->rk, timeout_ms);
+
+	return rb_int_new(events);
+}
+
+
+static VALUE producer_connect(VALUE self, VALUE timeout) {
+	HermannInstanceConfig *producerConfig;
+	rd_kafka_resp_err_t err;
+	VALUE result = Qfalse;
+	int timeout_ms = rb_num2int(timeout);
+	struct rd_kafka_metadata *data = NULL;
+
+	Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
+
+	if (!producerConfig->isInitialized) {
+		producer_init_kafka(self, producerConfig);
+	}
+
+	err = rd_kafka_metadata(producerConfig->rk,
+									0,
+								   producerConfig->rkt,
+								   &data,
+								   timeout_ms);
+	TRACER("err: %s (%i)\n", rd_kafka_err2str(err), err);
+	
+	if (RD_KAFKA_RESP_ERR_NO_ERROR == err) {
+		TRACER("brokers: %i, topics: %i\n",
+				data->broker_cnt,
+				data->topic_cnt);
+		producerConfig->isConnected = 1;
+		result = Qtrue;
+	}
+	else {
+		producerConfig->isErrored = err;
+	}
+
+	rd_kafka_metadata_destroy(data);
+
+	return result;
+}
+
+static VALUE producer_is_connected(VALUE self) {
 	HermannInstanceConfig *producerConfig;
 
 	Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
 
-	/* XXX: calling with no timeout right now! */
-	rd_kafka_poll(producerConfig->rk, 0);
+	if (!producerConfig->isInitialized) {
+		return Qfalse;
+	}
 
-	return self;
+	if (!producerConfig->isConnected) {
+		return Qfalse;
+	}
+
+	return Qtrue;
+}
+
+static VALUE producer_is_errored(VALUE self) {
+	HermannInstanceConfig *producerConfig;
+
+	Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
+
+	if (producerConfig->isErrored) {
+		return Qtrue;
+	}
+
+	return Qfalse;
 }
 
 
@@ -670,9 +771,7 @@ static VALUE consumer_initialize(VALUE self,
 	char* brokersPtr;
 	int partitionNo;
 
-#ifdef TRACE
-	fprintf(stderr, "consumer_initialize\n");
-#endif
+	TRACER("initing consumer ruby object\n");
 
 	topicPtr = StringValuePtr(topic);
 	brokersPtr = StringValuePtr(brokers);
@@ -703,10 +802,6 @@ static VALUE consumer_init_copy(VALUE copy,
 	HermannInstanceConfig* orig_config;
 	HermannInstanceConfig* copy_config;
 
-#ifdef TRACE
-	fprintf(stderr, "consumer_init_copy\n");
-#endif
-
 	if (copy == orig) {
 		return copy;
 	}
@@ -733,13 +828,10 @@ static VALUE consumer_init_copy(VALUE copy,
  */
 static void producer_free(void *p) {
 
-	HermannInstanceConfig* config;
+	HermannInstanceConfig* config = (HermannInstanceConfig *)p;
 
-#ifdef TRACE
-	fprintf(stderr, "producer_free\n");
-#endif
+	TRACER("dealloc producer ruby object (%p)\n", p);
 
-	config = (HermannInstanceConfig *)p;
 
 	if (NULL == p) {
 		return;
@@ -769,13 +861,7 @@ static void producer_free(void *p) {
 static VALUE producer_allocate(VALUE klass) {
 
 	VALUE obj;
-	HermannInstanceConfig* producerConfig;
-
-#ifdef TRACE
-	fprintf(stderr, "producer_allocate\n");
-#endif
-
-	producerConfig = ALLOC(HermannInstanceConfig);
+	HermannInstanceConfig* producerConfig = ALLOC(HermannInstanceConfig);
 
 	producerConfig->topic = NULL;
 	producerConfig->rk = NULL;
@@ -792,6 +878,8 @@ static VALUE producer_allocate(VALUE klass) {
 	producerConfig->exit_eof = 0;
 	producerConfig->quiet = 0;
 	producerConfig->isInitialized = 0;
+	producerConfig->isConnected = 0;
+	producerConfig->isErrored = 0;
 
 	obj = Data_Wrap_Struct(klass, 0, producer_free, producerConfig);
 
@@ -815,9 +903,8 @@ static VALUE producer_initialize(VALUE self,
 	char* topicPtr;
 	char* brokersPtr;
 
-#ifdef TRACE
-	fprintf(stderr, "producer_initialize\n");
-#endif
+	TRACER("initialize Producer ruby object\n");
+
 
 	topicPtr = StringValuePtr(topic);
 	brokersPtr = StringValuePtr(brokers);
@@ -849,10 +936,6 @@ static VALUE producer_init_copy(VALUE copy,
 	HermannInstanceConfig* orig_config;
 	HermannInstanceConfig* copy_config;
 
-#ifdef TRACE
-	fprintf(stderr, "producer_init_copy\n");
-#endif
-
 	if (copy == orig) {
 		return copy;
 	}
@@ -880,9 +963,7 @@ static VALUE producer_init_copy(VALUE copy,
 void Init_hermann_lib() {
 	VALUE lib_module, c_consumer, c_producer;
 
-#ifdef TRACE
-	fprintf(stderr, "init_hermann_lib\n");
-#endif
+	TRACER("setting up Hermann::Lib\n");
 
 	/* Define the module */
 	hermann_module = rb_define_module("Hermann");
@@ -917,4 +998,13 @@ void Init_hermann_lib() {
 
 	/* Producer.tick */
 	rb_define_method(c_producer, "tick", producer_tick, 1);
+
+	/* Producer.connected? */
+	rb_define_method(c_producer, "connected?", producer_is_connected, 0);
+
+	/* Producer.errored? */
+	rb_define_method(c_producer, "errored?", producer_is_errored, 0);
+
+	/* Producer.connect */
+	rb_define_method(c_producer, "connect", producer_connect, 1);
 }
