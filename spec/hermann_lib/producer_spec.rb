@@ -58,12 +58,23 @@ describe Hermann::Lib::Producer do
   end
 
   describe '#push_single', :type => :integration do
-    subject(:push) { |example| producer.push_single(example.full_description, nil) }
+    let(:message) { |example| example.full_description }
+    subject(:push) { producer.push_single(message, nil) }
 
     it 'should return' do
       expect(push).not_to be_nil
       producer.tick(timeout)
       expect(producer).to be_connected
+    end
+
+    context 'with binary data' do
+      let(:message) { "\n+AuOzetQrTrdwSY14ig7I_1oUwjp3DvTx3YWhSTGD4Fo\022\0312014-09-10T00:18:47-07:00\032,\n\006scream\022\016missing_device\032\022app0\"\t\n\astarted*(\b\000\022$009f0305-b50a-455d-b137-e52b45f674aa*(\b\001\022$53c0d817-d94b-4b7a-9a58-95fe8cec4333" }
+
+      it 'should return' do
+        expect(push).not_to be_nil
+        producer.tick(timeout)
+        expect(producer).to be_connected
+      end
     end
   end
 
