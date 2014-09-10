@@ -39,7 +39,11 @@ describe Hermann::Lib::Producer do
 
       it 'should error after attempting to connect' do |example|
         producer.push_single(example.full_description, nil)
-        producer.tick(timeout)
+        begin
+          producer.tick(timeout)
+        rescue StandardError => ex
+          # swallow exceptions, since we're just testing #errored?
+        end
         expect(producer).to be_errored
       end
     end

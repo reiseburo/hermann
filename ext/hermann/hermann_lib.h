@@ -56,6 +56,8 @@
 // Holds the defined Ruby module for Hermann
 static VALUE hermann_module;
 
+#define HERMANN_MAX_ERRSTR_LEN 512
+
 static int DEBUG = 0;
 
 // Should we expect rb_thread_blocking_region to be present?
@@ -88,7 +90,9 @@ typedef struct HermannInstanceConfig {
 
 	int isInitialized;
 	int isConnected;
+
 	int isErrored;
+	char *error;
 } HermannInstanceConfig;
 
 typedef HermannInstanceConfig hermann_conf_t;
