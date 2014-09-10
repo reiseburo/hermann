@@ -22,6 +22,11 @@ module Hermann
       return @internal.connected?
     end
 
+    # @return [Boolean] True if the underlying producer object has errored
+    def errored?
+      return @internal.errored?
+    end
+
     def connect(timeout=0)
       return @internal.connect(timeout * 1000)
     end

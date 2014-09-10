@@ -88,7 +88,7 @@ typedef struct HermannInstanceConfig {
 
 	int isInitialized;
 	int isConnected;
-
+	int isErrored;
 } HermannInstanceConfig;
 
 typedef HermannInstanceConfig hermann_conf_t;

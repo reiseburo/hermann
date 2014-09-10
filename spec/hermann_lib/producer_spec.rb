@@ -27,6 +27,24 @@ describe Hermann::Lib::Producer do
     end
   end
 
+  describe '#errored?' do
+    subject { producer.errored? }
+
+    context 'by default' do
+      it { should be false }
+    end
+
+    context 'with an non-existing broker' do
+      let(:brokers) { 'localhost:13337' }
+
+      it 'should error after attempting to connect' do |example|
+        producer.push_single(example.full_description, nil)
+        producer.tick(timeout)
+        expect(producer).to be_errored
+      end
+    end
+  end
+
   describe '#connected?' do
     subject { producer.connected? }
 
