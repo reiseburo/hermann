@@ -573,11 +573,13 @@ static VALUE producer_push_single(VALUE self, VALUE message, VALUE result) {
 		TRACER("setting result: %p\n", result);
 	}
 
+	TRACER("rd_kafka_produce() message of %i bytes\n", RSTRING_LEN(message));
+
 	/* Send/Produce message. */
 	if (-1 == rd_kafka_produce(producerConfig->rkt,
 						 producerConfig->partition,
 						 RD_KAFKA_MSG_F_COPY,
-						 rb_string_value_cstr(&message),
+						 RSTRING_PTR(message),
 						 RSTRING_LEN(message),
 						 NULL,
 						 0,
