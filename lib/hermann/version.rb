@@ -1,3 +1,3 @@
 module Hermann
-  VERSION = '0.13'
+  VERSION = '0.16.0'
 end
