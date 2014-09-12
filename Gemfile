@@ -1,8 +1,12 @@
 source "https://rubygems.org"
 
-gem 'rake'
-gem 'rake-compiler'
-gem 'pry'
+gemspec
+
+group :development do
+  gem 'rake'
+  gem 'rake-compiler'
+  gem 'pry'
+end
 
 group :test do
   gem 'rspec', '~> 3.0.0'

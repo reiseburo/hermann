@@ -1,9 +1,16 @@
+PATH
+  remote: .
+  specs:
+    hermann (0.16.0)
+      mini_portile (~> 0.6.0)
+
 GEM
   remote: https://rubygems.org/
   specs:
     coderay (1.1.0)
     diff-lcs (1.2.5)
     method_source (0.8.2)
+    mini_portile (0.6.0)
     pry (0.9.12.6)
       coderay (~> 1.0)
       method_source (~> 0.8)
@@ -33,6 +40,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  hermann!
   pry
   rake
   rake-compiler

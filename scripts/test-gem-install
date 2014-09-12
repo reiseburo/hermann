@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+GEMSET=${HERMANN_GEMSET:-hermantest}
+GEM=./pkg/hermann-0.16.0.gem
+
+######################
+
+
+echo ">> Sourcing RVM"
+source ~/.rvm/scripts/rvm
+
+echo ">> Gemset: ${GEMSET}"
+for ruby in "1.8.7" "1.9.3"; do
+  echo ">> Testing in ${ruby}"
+  rvm use ${ruby}@${GEMSET} --create
+
+  echo ">> Installing ${GEM}"
+  gem install ${GEM} --verbose
+  if [ $? -ne 0 ]; then
+    "FAILFAILFAIL installing ${GEM} on ${ruby}@${GEMSET} FAILFAILFAIL"
+    exit 1
+  fi;
+
+  echo ">>> done, deleting"
+  rvm gemset delete ${GEMSET} --force
+done;

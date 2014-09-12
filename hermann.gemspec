@@ -23,5 +23,7 @@ SPEC = Gem::Specification.new do |s|
   s.require_paths = ["lib", "ext/hermann"]
   s.rubygems_version = '2.2.2'
 
+  s.add_dependency('mini_portile', '~> 0.6.0')
+
   s.specification_version = 3 if s.respond_to?(:specification_version)
 end
