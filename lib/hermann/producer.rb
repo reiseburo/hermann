@@ -43,7 +43,9 @@ module Hermann
       if value.kind_of? Array
         return value.map { |e| self.push(e) }
       else
-        @internal.push_single(value, result)
+        # Avoid passing the result object for now
+        # @internal.push_single(value, result)
+        @internal.push_single(value, nil)
       end
 
       return result
