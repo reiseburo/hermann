@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    hermann (0.16.0)
+    hermann (0.16.1)
       mini_portile (~> 0.6.0)
 
 GEM
