@@ -54,8 +54,10 @@ module Hermann
     #
     # @return [Hermann::Result] A new, unused, result
     def create_result
-      @children << Hermann::Result.new(self)
-      return @children.last
+      # Avoid pushing our result until callbacks are fixed
+      # @children << Hermann::Result.new(self)
+      # return @children.last
+      return Hermann::Result.new(self)
     end
 
     # Tick the underlying librdkafka reacter and clean up any unreaped but

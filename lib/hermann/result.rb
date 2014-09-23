@@ -54,6 +54,8 @@ module Hermann
         puts "Hermann::Result#set_internal_value(#{value.class}:\"#{value}\", error?:#{is_error})"
         @state = :rejected
       else
+        # DEBUG
+        puts "Hermann::Result#set_internal_value(#{value.class}:\"#{value}\", error?:#{is_error}), fulfilled"
         @state = :fulfilled
       end
     end

@@ -43,6 +43,9 @@
 
 #include <librdkafka/rdkafka.h>
 
+// DEBUG
+#define TRACE
+
 #ifdef TRACE
 #define TRACER(...) do {  \
 	fprintf(stderr, "%i:%s()> ", __LINE__, __PRETTY_FUNCTION__); \
