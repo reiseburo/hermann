@@ -1,20 +1,28 @@
 PATH
   remote: .
   specs:
-    hermann (0.16.0)
+    hermann (0.17.0)
+      concurrent-ruby
       mini_portile (~> 0.6.0)
 
 GEM
   remote: https://rubygems.org/
   specs:
     coderay (1.1.0)
+    concurrent-ruby (0.7.0)
     diff-lcs (1.2.5)
+    ffi (1.9.5-java)
     method_source (0.8.2)
     mini_portile (0.6.0)
     pry (0.9.12.6)
       coderay (~> 1.0)
       method_source (~> 0.8)
       slop (~> 3.4)
+    pry (0.9.12.6-java)
+      coderay (~> 1.0)
+      method_source (~> 0.8)
+      slop (~> 3.4)
+      spoon (~> 0.0)
     rake (10.3.2)
     rake-compiler (0.9.3)
       rake
@@ -34,9 +42,12 @@ GEM
       rspec-support (~> 3.0.0)
     rspec-support (3.0.4)
     slop (3.5.0)
+    spoon (0.0.4)
+      ffi
     system_timer (1.2.4)
 
 PLATFORMS
+  java
   ruby
 
 DEPENDENCIES

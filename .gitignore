@@ -7,3 +7,4 @@ ext/mkmf.log
 ext/Makefile
 pkg/
 tmp/
+*.jar

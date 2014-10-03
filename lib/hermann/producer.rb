@@ -1,6 +1,12 @@
 require 'hermann'
 require 'hermann/result'
-require 'hermann_lib'
+
+
+if RUBY_PLATFORM == "java"
+  require 'hermann/providers/java_producer'
+else
+  require 'hermann_lib'
+end
 
 module Hermann
   class Producer
@@ -9,7 +15,11 @@ module Hermann
     def initialize(topic, brokers)
       @topic = topic
       @brokers = brokers
-      @internal = Hermann::Lib::Producer.new(topic, brokers)
+      if RUBY_PLATFORM == "java"
+        @internal = Hermann::Providers::JavaProducer.new(topic, brokers)
+      else
+        @internal = Hermann::Lib::Producer.new(topic, brokers)
+      end
       # We're tracking children so we can make sure that at Producer exit we
       # make a reasonable attempt to clean up outstanding result objects
       @children = []
@@ -39,13 +49,11 @@ module Hermann
     #   result from the broker
     def push(value)
       result = create_result
-
       if value.kind_of? Array
         return value.map { |e| self.push(e) }
       else
         @internal.push_single(value, result)
       end
-
       return result
     end
 
