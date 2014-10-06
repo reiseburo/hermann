@@ -55,6 +55,7 @@ module Hermann
       else
         if RUBY_PLATFORM == "java"
           result = @internal.push_single(value)
+          @children << result
         else
           @internal.push_single(value, result)
         end

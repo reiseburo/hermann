@@ -5,7 +5,7 @@ require 'concurrent'
 module Hermann
   module Provider
     class JavaProducer
-      attr_accessor :topic, :producer
+      attr_accessor :topic, :producer, :connected
 
       def initialize(topic, brokers)
         @topic     = topic
@@ -24,7 +24,7 @@ module Hermann
         Concurrent::Promise.new {
           data = ProducerUtil::KeyedMessage.new(@topic, msg)
           @producer.send(data)
-        }.rescue { |reason| raise reason }
+        }
       end
 
       private

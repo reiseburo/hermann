@@ -1,6 +1,5 @@
 require 'spec_helper'
 require 'hermann/provider/java_producer'
-require 'hermann_jars'
 
 describe Hermann::Provider::JavaProducer do
   subject(:producer) { described_class.new(topic, brokers) }
@@ -16,7 +15,7 @@ describe Hermann::Provider::JavaProducer do
         it 'should be rejected' do
           promise = producer.push_single('rspec').execute.wait(1)
           expect(promise).to be_rejected
-          expect(promise.reason).to_not be_nil
+          expect { promise.value! }.to raise_error
         end
       end
 
