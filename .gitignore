@@ -7,3 +7,6 @@ ext/mkmf.log
 ext/Makefile
 pkg/
 tmp/
+*.jar
+.ruby-gemset
+.ruby-version
