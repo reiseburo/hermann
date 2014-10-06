@@ -3,17 +3,29 @@ PATH
   specs:
     hermann (0.17.0)
       concurrent-ruby
-      mini_portile (~> 0.6.0)
+      jar-dependencies (~> 0.1.2)
 
 GEM
   remote: https://rubygems.org/
   specs:
+    axiom-types (0.1.1)
+      descendants_tracker (~> 0.0.4)
+      ice_nine (~> 0.11.0)
+      thread_safe (~> 0.3, >= 0.3.1)
     coderay (1.1.0)
-    concurrent-ruby (0.7.0)
+    coercible (1.0.0)
+      descendants_tracker (~> 0.0.1)
+    concurrent-ruby (0.7.0-java)
+    descendants_tracker (0.0.4)
+      thread_safe (~> 0.3, >= 0.3.1)
     diff-lcs (1.2.5)
+    equalizer (0.0.9)
     ffi (1.9.5-java)
+    ice_nine (0.11.0)
+    jar-dependencies (0.1.2)
+    maven-tools (1.0.5)
+      virtus (~> 1.0)
     method_source (0.8.2)
-    mini_portile (0.6.0)
     pry (0.9.12.6)
       coderay (~> 1.0)
       method_source (~> 0.8)
@@ -41,10 +53,20 @@ GEM
     rspec-mocks (3.0.4)
       rspec-support (~> 3.0.0)
     rspec-support (3.0.4)
+    ruby-maven (3.1.1.0.8)
+      maven-tools (~> 1.0.1)
+      ruby-maven-libs (= 3.1.1)
+    ruby-maven-libs (3.1.1)
     slop (3.5.0)
     spoon (0.0.4)
       ffi
     system_timer (1.2.4)
+    thread_safe (0.3.4-java)
+    virtus (1.0.3)
+      axiom-types (~> 0.1)
+      coercible (~> 1.0)
+      descendants_tracker (~> 0.0, >= 0.0.3)
+      equalizer (~> 0.0, >= 0.0.9)
 
 PLATFORMS
   java
@@ -57,4 +79,5 @@ DEPENDENCIES
   rake-compiler
   rspec (~> 3.0.0)
   rspec-its
+  ruby-maven (~> 3.1.1.0)
   system_timer

@@ -3,7 +3,7 @@ require 'hermann/result'
 
 
 if RUBY_PLATFORM == "java"
-  require 'hermann/providers/java_producer'
+  require 'hermann/provider/java_producer'
 else
   require 'hermann_lib'
 end
@@ -16,7 +16,7 @@ module Hermann
       @topic = topic
       @brokers = brokers
       if RUBY_PLATFORM == "java"
-        @internal = Hermann::Providers::JavaProducer.new(topic, brokers)
+        @internal = Hermann::Provider::JavaProducer.new(topic, brokers)
       else
         @internal = Hermann::Lib::Producer.new(topic, brokers)
       end
@@ -49,11 +49,17 @@ module Hermann
     #   result from the broker
     def push(value)
       result = create_result
+
       if value.kind_of? Array
         return value.map { |e| self.push(e) }
       else
-        @internal.push_single(value, result)
+        if RUBY_PLATFORM == "java"
+          result = @internal.push_single(value)
+        else
+          @internal.push_single(value, result)
+        end
       end
+
       return result
     end
 
