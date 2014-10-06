@@ -1,5 +1,7 @@
 module Hermann
   if RUBY_PLATFORM == "java"
+    require 'hermann_jars'
+
     module JavaUtil
       include_package 'java.util'
     end
