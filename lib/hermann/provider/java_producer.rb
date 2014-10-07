@@ -37,7 +37,7 @@ module Hermann
       #   data to the kafka broker.  Upon execution the Promise's status
       #   will be set
       def push_single(msg)
-        Concurrent::Promise.new {
+        Concurrent::Promise.execute {
           data = ProducerUtil::KeyedMessage.new(@topic, msg)
           @producer.send(data)
         }

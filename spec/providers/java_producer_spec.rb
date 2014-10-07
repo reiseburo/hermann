@@ -13,7 +13,7 @@ describe Hermann::Provider::JavaProducer do
     context 'error conditions' do
       shared_examples 'an error condition' do
         it 'should be rejected' do
-          promise = producer.push_single('rspec').execute.wait(1)
+          promise = producer.push_single('rspec').wait(1)
           expect(promise).to be_rejected
           expect { promise.value! }.to raise_error
         end
