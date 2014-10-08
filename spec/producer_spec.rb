@@ -11,6 +11,8 @@ describe Hermann::Producer do
     describe '#create_result' do
       subject { producer.create_result }
 
+      before { allow_any_instance_of(Hermann::Provider::JavaProducer).to receive(:broker_list) { double } }
+
       it { should be_instance_of Hermann::Result }
 
       it 'should add the result to the producers children' do

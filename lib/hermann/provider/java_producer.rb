@@ -1,25 +1,26 @@
 require 'hermann'
 require 'concurrent'
+require 'zk'
+require 'json'
 
 module Hermann
   module Provider
 
-    # Kafka Producer class implemented with jruby and kafka client jar
-    #
-    # == Heading
-    #
     # This class simulates the kafka producer class within a java environment.
     # If the producer throw an exception within the Promise a call to +.value!+
     # will raise the exception and the rejected flag will be set to true
     #
     class JavaProducer
-      attr_accessor :topic, :producer, :connected
+      attr_accessor :topic, :producer
 
-      def initialize(topic, brokers)
-        @topic     = topic
-        properties = create_properties(:brokers => brokers)
-        config     = create_config(properties)
-        @producer  = JavaApiUtil::Producer.new(config)
+      BROKERS_PATH = "/brokers/ids"
+
+      def initialize(topic, zookeepers)
+        @topic      = topic
+        brokers     = broker_list(zookeepers)
+        properties  = create_properties(:brokers => brokers)
+        config      = create_config(properties)
+        @producer   = JavaApiUtil::Producer.new(config)
       end
 
       DEFAULTS = {
@@ -40,6 +41,30 @@ module Hermann
           data = ProducerUtil::KeyedMessage.new(@topic, msg)
           @producer.send(data)
         }
+      end
+
+      # Get a list of brokers
+      #
+      # @return [String] a csv of Broker's host:port
+      def broker_list(zookeepers)
+        get_all_zookeepers_brokers(zookeepers).map {|b| "#{b["host"]}:#{b["port"]}" }.join(",")
+      end
+
+      # Create connection to Zookeepers
+      #
+      # @return [Array] parsed json containing host and port of brokers
+      def get_all_zookeepers_brokers(zookeepers)
+        ZK.open(zookeepers) { |zk| return get_zookeeper_brokers(zk) }
+      end
+
+      # Get broker's data
+      #
+      # @return [Array] parsed json container host and port of brokers
+      def get_zookeeper_brokers(zookeeper)
+        zookeeper.children(BROKERS_PATH).inject([]) do |brokers, id|
+          broker_json = zookeeper.get("#{BROKERS_PATH}/#{id}")[0]
+          brokers << JSON.parse(broker_json)
+        end
       end
 
       private

@@ -2,13 +2,53 @@ require 'spec_helper'
 require 'hermann/provider/java_producer'
 
 describe Hermann::Provider::JavaProducer, :platform => :java  do
-  subject(:producer) { described_class.new(topic, brokers) }
+  subject(:producer) { described_class.new(topic, zookeepers) }
 
-  let(:topic) { 'rspec' }
-  let(:brokers) { 'localhost:1337' }
+  let(:topic)      { 'rspec' }
+  let(:zookeepers) { 'localhost:2181' }
+  let(:brokers)    { '0:1337'}
+
+  describe '#broker_list' do
+    let(:val) { ["host"=>"f", "port"=>"1"] }
+    it 'gets the list of brokers' do
+      allow_any_instance_of(described_class).to receive(:get_all_zookeepers_brokers).with(zookeepers) { val }
+      expect(producer.broker_list(zookeepers)).to eq "f:1"
+    end
+  end
+
+  describe '#get_all_zookeepers_brokers' do
+    let(:zk) { 'foo' }
+    it 'gets all the brokers' do
+      allow_any_instance_of(described_class).to receive(:broker_list) { brokers }
+      allow(ZK).to receive(zookeepers).and_yield(zk)
+      expect(producer).to receive(:get_zookeeper_brokers).with(any_args)
+      producer.get_all_zookeepers_brokers(zookeepers)
+    end
+  end
+
+  describe '#get_zookeeper_brokers' do
+    let(:zookeeper) { double }
+    let(:json) { "{\"jmx_port\":1,\"timestamp\":\"1\",\"host\":\"1.1.1.1\",\"version\":1,\"port\":9}" }
+    let(:result) { [{"jmx_port"=>1, "timestamp"=>"1", "host"=>"1.1.1.1", "version"=>1, "port"=>9}] }
+    it 'gets hash of brokers' do
+      allow_any_instance_of(described_class).to receive(:broker_list) { brokers }
+      allow(zookeeper).to receive(:children).with(any_args) { [1] }
+      allow(zookeeper).to receive(:get) { [json] }
+      expect(producer.get_zookeeper_brokers(zookeeper)).to eq result
+    end
+  end
 
   describe '#push_single' do
-    subject(:result) { producer.push_single(value) }
+    subject(:result) { producer.push_single('foo') }
+
+    before do
+      allow_any_instance_of(described_class).to receive(:broker_list) { brokers }
+    end
+
+
+    it 'returns an executing Promise' do
+      expect(result.wait(1).pending?).to eq false
+    end
 
     context 'error conditions' do
       shared_examples 'an error condition' do
@@ -30,7 +70,7 @@ describe Hermann::Provider::JavaProducer, :platform => :java  do
         let(:value) { 'rspec' }
 
         it 'should reject' do
-          future = result.execute.wait(1)
+          future = result.wait(1)
           expect(future).to be_rejected
         end
       end
