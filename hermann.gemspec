@@ -3,14 +3,15 @@ $LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__) + '/lib'))
 
 require 'hermann/version'
 
-SPEC = Gem::Specification.new do |s|
+
+Gem::Specification.new do |s|
   s.name               = "hermann"
   s.version            = Hermann::VERSION
 
-  s.authors = ["Stan Campbell", 'R. Tyler Croy']
-  s.description = 'Ruby gem wrapper for librdkafka'
-  s.summary = 'A Kafka consumer/producer gem based on the librdkafka C library.'
-  s.email = ['stan.campbell3@gmail.com', 'rtyler.croy@lookout.com']
+  s.authors = ['R. Tyler Croy', "Stan Campbell"]
+  s.description = 'Ruby gem for talking to Kafka'
+  s.summary = 'A Kafka consumer/producer gem supporting both MRI and JRuby'
+  s.email = ['rtyler.croy@lookout.com', 'stan.campbell3@gmail.com']
   s.homepage = 'https://github.com/lookout/Hermann'
   s.licenses = ['MIT']
 
@@ -22,7 +23,7 @@ SPEC = Gem::Specification.new do |s|
   s.rubygems_version = '2.2.2'
   s.specification_version = 3 if s.respond_to?(:specification_version)
 
-  s.add_dependency 'concurrent-ruby'
+  s.add_dependency 'concurrent-ruby', '~> 0.7.0'
 
   if RUBY_PLATFORM == "java"
     s.add_runtime_dependency 'jar-dependencies', '~>0.1.2'

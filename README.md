@@ -16,8 +16,7 @@ Usage is modelled on the
 straightforward.
 
 - Kafka 0.8 is supported.
-- Ruby 1.8.7 and Ruby 2.1.1 have been tested, but JRuby and versions
-  >= 1.8 should work as long as the librdkafka library is installed.
+- Ruby 1.9.3, 2.1.1 and JRuby are tested against
 - This is an early alpha version of the gem, so expect bumps in the
   road.
 
@@ -54,7 +53,3 @@ yet coordinate partition (re)assigment within consumer groups.
     messages.each do
         |msg| p.push(msg)
     end
-
-## Questions?
-
-Stan Campbell can be reached at stan.campbell3 at( @ ) gmail.com
