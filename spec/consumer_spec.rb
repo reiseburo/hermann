@@ -1,7 +1,9 @@
 require 'spec_helper'
 require 'hermann/consumer'
 
-describe Hermann::Consumer do
+# XXX: Hermann::Consumer isn't really supported anywhere, MRI included right
+# now
+describe Hermann::Consumer, :platform => :mri do
   subject(:consumer) { described_class.new(topic, brokers, partition) }
 
   let(:topic) { 'rspec' }

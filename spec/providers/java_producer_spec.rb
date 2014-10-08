@@ -1,7 +1,7 @@
 require 'spec_helper'
 require 'hermann/provider/java_producer'
 
-describe Hermann::Provider::JavaProducer do
+describe Hermann::Provider::JavaProducer, :platform => :java  do
   subject(:producer) { described_class.new(topic, brokers) }
 
   let(:topic) { 'rspec' }

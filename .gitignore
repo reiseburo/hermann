@@ -10,3 +10,4 @@ tmp/
 *.jar
 .ruby-gemset
 .ruby-version
+Gemfile.lock

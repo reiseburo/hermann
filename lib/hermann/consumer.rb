@@ -1,5 +1,8 @@
 require 'hermann'
-require 'hermann_lib'
+
+unless Hermann.jruby?
+  require 'hermann_lib'
+end
 
 module Hermann
   class Consumer
@@ -9,7 +12,9 @@ module Hermann
       @topic = topic
       @brokers = brokers
       @partition = partition
-      @internal = Hermann::Lib::Consumer.new(topic, brokers, partition)
+      unless Hermann.jruby?
+        @internal = Hermann::Lib::Consumer.new(topic, brokers, partition)
+      end
     end
 
     def consume(&block)

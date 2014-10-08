@@ -1,4 +1,3 @@
-require 'java'
 require 'hermann'
 require 'concurrent'
 
