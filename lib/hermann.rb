@@ -1,5 +1,10 @@
 module Hermann
-  if RUBY_PLATFORM == "java"
+  def self.jruby?
+    return RUBY_PLATFORM == "java"
+  end
+
+  if self.jruby?
+    require 'java'
     require 'hermann_jars'
 
     module JavaUtil

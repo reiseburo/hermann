@@ -12,7 +12,15 @@ Rake::ExtensionTask.new do |t|
 end
 
 RSpec::Core::RakeTask.new(:spec) do |r|
-  r.rspec_opts = '--tag ~type:integration'
+  options = ['--tag ~type:integration']
+
+  if RUBY_PLATFORM == 'java'
+    options << '--tag ~platform:mri'
+  else
+    options << '--tag ~platform:java'
+  end
+
+  r.rspec_opts = options.join(' ')
 end
 
 namespace :spec do
