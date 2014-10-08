@@ -37,5 +37,10 @@ end
 
 task :build => [:compile]
 task :clean => [:removetmp]
-task :default => [:clean, :build, :spec]
+
+if RUBY_PLATFORM == 'java'
+  task :default => [:clean, :spec]
+else
+  task :default => [:clean, :build, :spec]
+end
 
