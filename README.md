@@ -31,7 +31,7 @@ straightforward.
 #### Zookeeper discovery (JRuby-only)
 
 ```
-[1] pry(main)> 
+[1] pry(main)>
 [2] pry(main)> require 'hermann/producer'
 => true
 [3] pry(main)> require 'hermann/discovery/zookeeper'
@@ -57,7 +57,7 @@ straightforward.
 => nil
 [7] pry(main)> f.state
 => :fulfilled
-[8] pry(main)> 
+[8] pry(main)>
 ```
 
 
@@ -76,6 +76,28 @@ straightforward.
 => 1
 [6] pry(main)> f.state
 => :fulfilled
-[7] pry(main)> 
+[7] pry(main)>
 
+```
+
+#### How to convert from using jruby-kafka
+
+* Gemfile
+  * remove jruby-kafka
+  * add ```gem "hermann"```
+  * ```bundle install```
+* Jarfile
+  * removed unecessary jars from your Jarfile (i.e. kafka, log4j)
+  * jar dependencies are automatically included with Hermann
+  * ```jbundle install```
+
+```ruby
+require 'hermann'
+require 'hermann_jars'
+require 'hermann/discovery/zookeeper'
+#look in zookeeper for kafka brokers under the path /brokers/ids
+kafka_broker_ids = Hermann::Discovery::Zookeeper.new('localhost:2181').get_brokers
+producer = Hermann::Producer.new('topic', kafka_broker_ids)
+promise = producer.push("foo")  # returns Concurrent::Promise
+promise.value!
 ```
