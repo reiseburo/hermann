@@ -24,6 +24,7 @@ Gem::Specification.new do |s|
   s.specification_version = 3 if s.respond_to?(:specification_version)
 
   s.add_dependency 'concurrent-ruby', '~> 0.7.0'
+  s.add_dependency "zk", "~> 1.9.4"
 
   if RUBY_PLATFORM == "java"
     s.add_runtime_dependency 'jar-dependencies', '~>0.1.2'

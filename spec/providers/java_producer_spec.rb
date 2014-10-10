@@ -2,13 +2,23 @@ require 'spec_helper'
 require 'hermann/provider/java_producer'
 
 describe Hermann::Provider::JavaProducer, :platform => :java  do
-  subject(:producer) { described_class.new(topic, brokers) }
+  subject(:producer) { described_class.new(topic, zookeepers) }
 
-  let(:topic) { 'rspec' }
-  let(:brokers) { 'localhost:1337' }
+  let(:topic)      { 'rspec' }
+  let(:zookeepers) { 'localhost:2181' }
+  let(:brokers)    { '0:1337'}
+
 
   describe '#push_single' do
-    subject(:result) { producer.push_single(value) }
+    subject(:result) { producer.push_single('foo') }
+
+    before do
+      allow_any_instance_of(described_class).to receive(:broker_list) { brokers }
+    end
+
+    it 'returns an executing Promise' do
+      expect(result.wait(1).pending?).to eq false
+    end
 
     context 'error conditions' do
       shared_examples 'an error condition' do
@@ -30,7 +40,7 @@ describe Hermann::Provider::JavaProducer, :platform => :java  do
         let(:value) { 'rspec' }
 
         it 'should reject' do
-          future = result.execute.wait(1)
+          future = result.wait(1)
           expect(future).to be_rejected
         end
       end

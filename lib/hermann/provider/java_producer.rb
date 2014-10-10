@@ -1,25 +1,22 @@
 require 'hermann'
 require 'concurrent'
+require 'json'
 
 module Hermann
   module Provider
 
-    # Kafka Producer class implemented with jruby and kafka client jar
-    #
-    # == Heading
-    #
     # This class simulates the kafka producer class within a java environment.
     # If the producer throw an exception within the Promise a call to +.value!+
     # will raise the exception and the rejected flag will be set to true
     #
     class JavaProducer
-      attr_accessor :topic, :producer, :connected
+      attr_accessor :topic, :producer
 
       def initialize(topic, brokers)
-        @topic     = topic
-        properties = create_properties(:brokers => brokers)
-        config     = create_config(properties)
-        @producer  = JavaApiUtil::Producer.new(config)
+        @topic      = topic
+        properties  = create_properties(:brokers => brokers)
+        config      = create_config(properties)
+        @producer   = JavaApiUtil::Producer.new(config)
       end
 
       DEFAULTS = {
