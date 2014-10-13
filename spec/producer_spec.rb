@@ -19,6 +19,23 @@ describe Hermann::Producer do
         expect(producer.children).to_not be_empty
       end
     end
+
+    describe '#push' do
+      let(:msg)   { 'foo' }
+      let(:passed_topic) { 'bar' }
+      context 'without topic passed' do
+        it 'uses initialized topic' do
+          expect_any_instance_of(Hermann::Provider::JavaProducer).to receive(:push_single).with(msg, topic)
+          producer.push(msg)
+        end
+      end
+      context 'with topic passed' do
+        it 'can change topic' do
+          expect_any_instance_of(Hermann::Provider::JavaProducer).to receive(:push_single).with(msg, passed_topic)
+          producer.push(msg, :topic => passed_topic)
+        end
+      end
+    end
   end
 
   context "not java", :platform => :mri do

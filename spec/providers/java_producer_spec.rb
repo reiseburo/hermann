@@ -2,7 +2,7 @@ require 'spec_helper'
 require 'hermann/provider/java_producer'
 
 describe Hermann::Provider::JavaProducer, :platform => :java  do
-  subject(:producer) { described_class.new(topic, zookeepers) }
+  subject(:producer) { described_class.new(zookeepers) }
 
   let(:topic)      { 'rspec' }
   let(:zookeepers) { 'localhost:2181' }
@@ -10,8 +10,9 @@ describe Hermann::Provider::JavaProducer, :platform => :java  do
 
 
   describe '#push_single' do
-    subject(:result) { producer.push_single('foo') }
+    subject(:result) { producer.push_single('foo', topic) }
 
+    let(:passed_topic) { 'foo' }
     before do
       allow_any_instance_of(described_class).to receive(:broker_list) { brokers }
     end
@@ -20,10 +21,15 @@ describe Hermann::Provider::JavaProducer, :platform => :java  do
       expect(result.wait(1).pending?).to eq false
     end
 
+    it 'can change topic' do
+      expect(Hermann::ProducerUtil::KeyedMessage).to receive(:new).with(passed_topic, 'bar')
+      producer.push_single('bar', passed_topic).wait(1)
+    end
+
     context 'error conditions' do
       shared_examples 'an error condition' do
         it 'should be rejected' do
-          promise = producer.push_single('rspec').wait(1)
+          promise = producer.push_single('rspec', topic).wait(1)
           expect(promise).to be_rejected
           expect { promise.value! }.to raise_error
         end
