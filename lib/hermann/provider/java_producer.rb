@@ -10,10 +10,9 @@ module Hermann
     # will raise the exception and the rejected flag will be set to true
     #
     class JavaProducer
-      attr_accessor :topic, :producer
+      attr_accessor :producer
 
-      def initialize(topic, brokers)
-        @topic      = topic
+      def initialize(brokers)
         properties  = create_properties(:brokers => brokers)
         config      = create_config(properties)
         @producer   = JavaApiUtil::Producer.new(config)
@@ -28,13 +27,14 @@ module Hermann
       # Push a value onto the Kafka topic passed to this +Producer+
       #
       # @param [Object] value A single object to push
+      # @param [String] topic to push message to
       #
       # @return +Concurrent::Promise+ Representa a promise to send the
       #   data to the kafka broker.  Upon execution the Promise's status
       #   will be set
-      def push_single(msg)
+      def push_single(msg, topic)
         Concurrent::Promise.execute {
-          data = ProducerUtil::KeyedMessage.new(@topic, msg)
+          data = ProducerUtil::KeyedMessage.new(topic, msg)
           @producer.send(data)
         }
       end

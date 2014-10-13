@@ -16,7 +16,7 @@ module Hermann
       @topic = topic
       @brokers = brokers
       if RUBY_PLATFORM == "java"
-        @internal = Hermann::Provider::JavaProducer.new(topic, brokers)
+        @internal = Hermann::Provider::JavaProducer.new(brokers)
       else
         @internal = Hermann::Lib::Producer.new(topic, brokers)
       end
@@ -45,16 +45,21 @@ module Hermann
     # @param [Array] value An array of values to push, will push each one
     #   separately
     # @param [Object] value A single object to push
+    #
+    # @param [Hash] opts to pass to push method
+    # @params opts [String] :topic The topic to push messages to
+    #
     # @return [Hermann::Result] A future-like object which will store the
     #   result from the broker
-    def push(value)
+    def push(value, opts={})
+      topic = opts[:topic] || @topic
       result = create_result
 
       if value.kind_of? Array
         return value.map { |e| self.push(e) }
       else
         if RUBY_PLATFORM == "java"
-          result = @internal.push_single(value)
+          result = @internal.push_single(value, topic)
           @children << result
         else
           @internal.push_single(value, result)
