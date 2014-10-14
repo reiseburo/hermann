@@ -534,16 +534,19 @@ void producer_init_kafka(VALUE self, HermannInstanceConfig* config) {
  *
  *  @param  self	VALUE   the Ruby producer instance
  *  @param  message VALUE   the ruby String containing the outgoing message.
+ *  @param  topic   VALUE   the ruby String containing the topic to use for the
+ *							outgoing message.
  *  @param  result  VALUE   the Hermann::Result object to be fulfilled when the
  *		push completes
  */
-static VALUE producer_push_single(VALUE self, VALUE message, VALUE result) {
+static VALUE producer_push_single(VALUE self, VALUE message, VALUE topic, VALUE result) {
 
 	HermannInstanceConfig* producerConfig;
 	/* Context pointer, pointing to `result`, for the librdkafka delivery
 	 * callback
 	 */
 	hermann_push_ctx_t *delivery_ctx = (hermann_push_ctx_t *)malloc(sizeof(hermann_push_ctx_t));
+	rd_kafka_topic_t *rkt = NULL;
 
 	TRACER("self: %p, message: %p, result: %p)\n", self, message, result);
 
@@ -554,10 +557,9 @@ static VALUE producer_push_single(VALUE self, VALUE message, VALUE result) {
 
 	TRACER("producerConfig: %p\n", producerConfig);
 
-	if ((NULL == producerConfig->topic) ||
-		(0 == strlen(producerConfig->topic))) {
-		fprintf(stderr, "Topic is null!\n");
-		rb_raise(rb_eRuntimeError, "Topic cannot be empty");
+	if ((Qnil == topic) ||
+		(0 == RSTRING_LEN(topic))) {
+		rb_raise(rb_eArgError, "Topic cannot be empty");
 		return self;
 	}
 
@@ -566,6 +568,15 @@ static VALUE producer_push_single(VALUE self, VALUE message, VALUE result) {
 	}
 
 	TRACER("kafka initialized\n");
+
+	rkt = rd_kafka_topic_new(producerConfig->rk,
+								RSTRING_PTR(topic),
+								NULL);
+
+	if (NULL == rkt) {
+		rb_raise(rb_eRuntimeError, "Could not construct a topic structure");
+		return self;
+	}
 
 	/* Only pass result through if it's non-nil */
 	if (Qnil != result) {
@@ -576,7 +587,7 @@ static VALUE producer_push_single(VALUE self, VALUE message, VALUE result) {
 	TRACER("rd_kafka_produce() message of %i bytes\n", RSTRING_LEN(message));
 
 	/* Send/Produce message. */
-	if (-1 == rd_kafka_produce(producerConfig->rkt,
+	if (-1 == rd_kafka_produce(rkt,
 						 producerConfig->partition,
 						 RD_KAFKA_MSG_F_COPY,
 						 RSTRING_PTR(message),
@@ -588,6 +599,10 @@ static VALUE producer_push_single(VALUE self, VALUE message, VALUE result) {
 					rd_kafka_topic_name(producerConfig->rkt), producerConfig->partition,
 					rd_kafka_err2str(rd_kafka_errno2err(errno)));
 		/* TODO: raise a Ruby exception here, requires a test though */
+	}
+
+	if (NULL != rkt) {
+		rd_kafka_topic_destroy(rkt);
 	}
 
 	TRACER("returning\n");
@@ -913,11 +928,9 @@ static VALUE producer_allocate(VALUE klass) {
  *  Set up the configuration context for the Producer instance
  *
  *  @param  self	VALUE   the Producer instance
- *  @param  topic   VALUE   the Ruby string naming the topic
  *  @param  brokers VALUE   a Ruby string containing host:port pairs separated by commas
  */
 static VALUE producer_initialize(VALUE self,
-								 VALUE topic,
 								 VALUE brokers) {
 
 	HermannInstanceConfig* producerConfig;
@@ -926,12 +939,9 @@ static VALUE producer_initialize(VALUE self,
 
 	TRACER("initialize Producer ruby object\n");
 
-
-	topicPtr = StringValuePtr(topic);
 	brokersPtr = StringValuePtr(brokers);
 	Data_Get_Struct(self, HermannInstanceConfig, producerConfig);
 
-	producerConfig->topic = topicPtr;
 	producerConfig->brokers = brokersPtr;
 	/** Using RD_KAFKA_PARTITION_UA specifies we want the partitioner callback to be called to determine the target
 	 *  partition
@@ -1011,11 +1021,11 @@ void Init_hermann_lib() {
 	rb_define_alloc_func(c_producer, producer_allocate);
 
 	/* Initialize */
-	rb_define_method(c_producer, "initialize", producer_initialize, 2);
+	rb_define_method(c_producer, "initialize", producer_initialize, 1);
 	rb_define_method(c_producer, "initialize_copy", producer_init_copy, 1);
 
 	/* Producer.push_single(msg) */
-	rb_define_method(c_producer, "push_single", producer_push_single, 2);
+	rb_define_method(c_producer, "push_single", producer_push_single, 3);
 
 	/* Producer.tick */
 	rb_define_method(c_producer, "tick", producer_tick, 1);

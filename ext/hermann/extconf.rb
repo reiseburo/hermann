@@ -44,6 +44,78 @@ class RdKafkaRecipe < MiniPortile
       raise 'Checksum error!'
     end
   end
+
+  def download_file_http(url, full_path, count = 3)
+    filename = File.basename(full_path)
+    uri = URI.parse(url)
+
+    if ENV['http_proxy']
+      _, userinfo, p_host, p_port = URI.split(ENV['http_proxy'])
+      proxy_user, proxy_pass = userinfo.split(/:/) if userinfo
+      http = Net::HTTP.new(uri.host, uri.port, p_host, p_port, proxy_user, proxy_pass)
+    else
+      http = Net::HTTP.new(uri.host, uri.port)
+
+      if URI::HTTPS === uri
+        http.use_ssl = true
+        http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+
+        store = OpenSSL::X509::Store.new
+
+        # Auto-include system-provided certificates
+        store.set_default_paths
+
+        if ENV.has_key?("SSL_CERT_FILE") && File.exist?(ENV["SSL_CERT_FILE"])
+          store.add_file ENV["SSL_CERT_FILE"]
+        end
+
+        http.cert_store = store
+      end
+    end
+
+    message "Downloading #{filename} "
+    http.start do |h|
+      h.request_get(uri.path, 'Accept-Encoding' => 'identity') do |response|
+        case response
+        when Net::HTTPNotFound
+          output "404 - Not Found"
+          return false
+
+        when Net::HTTPClientError
+          output "Error: Client Error: #{response.inspect}"
+          return false
+
+        when Net::HTTPRedirection
+          raise "Too many redirections for the original URL, halting." if count <= 0
+          url = response["location"]
+          return download_file(url, full_path, count - 1)
+
+        when Net::HTTPOK
+          return with_tempfile(filename, full_path) do |temp_file|
+            size = 0
+            progress = 0
+            puts "HEADER: #{response.header['Content-Length']}"
+            total = response.header["Content-Length"].to_i
+
+            if total == 0
+              puts response.headers
+              raise "Failed to properly download o_O"
+            end
+            response.read_body do |chunk|
+              temp_file << chunk
+              size += chunk.size
+              new_progress = (size * 100) / total
+              unless new_progress == progress
+                message "\rDownloading %s (%3d%%) " % [filename, new_progress]
+              end
+              progress = new_progress
+            end
+            output
+          end
+        end
+      end
+    end
+  end
 end
 ################################################################################
 
