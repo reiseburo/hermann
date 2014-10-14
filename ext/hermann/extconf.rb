@@ -94,13 +94,16 @@ class RdKafkaRecipe < MiniPortile
           return with_tempfile(filename, full_path) do |temp_file|
             size = 0
             progress = 0
-            puts "HEADER: #{response.header['Content-Length']}"
             total = response.header["Content-Length"].to_i
 
             if total == 0
-              puts response.inspect
-              raise "Failed to properly download o_O"
+              # There are cases when apparently GitHub.com will return an empty
+              # content-length header, which means we can't really trust the
+              # response, so we'll treat it like a redirect
+              puts "Empty content-length header, retrying"
+              return download_file(url, full_path, count - 1)
             end
+
             response.read_body do |chunk|
               temp_file << chunk
               size += chunk.size
