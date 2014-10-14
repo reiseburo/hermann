@@ -11,3 +11,5 @@ tmp/
 .ruby-gemset
 .ruby-version
 Gemfile.lock
+Jarfile.lock
+.jbundler/
