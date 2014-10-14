@@ -12,13 +12,17 @@ module Hermann
   class Producer
     attr_reader :topic, :brokers, :internal, :children
 
+    # Initialize a producer object with a default topic and broker list
+    #
+    # @param [String] topic The default topic to use for pushing messages
+    # @param [Array] brokers An array of "host:port" strings for the brokers
     def initialize(topic, brokers)
       @topic = topic
       @brokers = brokers
       if RUBY_PLATFORM == "java"
         @internal = Hermann::Provider::JavaProducer.new(brokers)
       else
-        @internal = Hermann::Lib::Producer.new(topic, brokers)
+        @internal = Hermann::Lib::Producer.new(brokers)
       end
       # We're tracking children so we can make sure that at Producer exit we
       # make a reasonable attempt to clean up outstanding result objects
@@ -42,28 +46,29 @@ module Hermann
 
     # Push a value onto the Kafka topic passed to this +Producer+
     #
-    # @param [Array] value An array of values to push, will push each one
-    #   separately
     # @param [Object] value A single object to push
-    #
     # @param [Hash] opts to pass to push method
-    # @params opts [String] :topic The topic to push messages to
+    # @option opts [String] :topic The topic to push messages to
     #
     # @return [Hermann::Result] A future-like object which will store the
     #   result from the broker
     def push(value, opts={})
       topic = opts[:topic] || @topic
-      result = create_result
+      result = nil
 
       if value.kind_of? Array
         return value.map { |e| self.push(e) }
+      end
+
+      if RUBY_PLATFORM == "java"
+        result = @internal.push_single(value, topic)
+        @children << result
+        # Reaping children on the push just to make sure that it does get
+        # called correctly and we don't leak memory
+        reap_children
       else
-        if RUBY_PLATFORM == "java"
-          result = @internal.push_single(value, topic)
-          @children << result
-        else
-          @internal.push_single(value, result)
-        end
+        result = create_result
+        @internal.push_single(value, topic, result)
       end
 
       return result

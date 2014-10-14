@@ -38,14 +38,14 @@ describe Hermann::Producer do
     end
   end
 
-  context "not java", :platform => :mri do
+  context "on C ruby", :platform => :mri do
     describe '#push' do
       subject(:result) { producer.push(value) }
 
       context 'error conditions' do
         shared_examples 'an error condition' do
           it 'should raise an exception' do
-            expect { producer.push('rspec') }.to raise_error(RuntimeError)
+            expect { producer.push('rspec') }.to raise_error
           end
         end
 
@@ -87,7 +87,7 @@ describe Hermann::Producer do
 
         it 'should invoke #push_single for each element' do
           value.each do |v|
-            expect(producer.internal).to receive(:push_single).with(v, anything)
+            expect(producer.internal).to receive(:push_single).with(v, topic, anything)
           end
 
           expect(result).to be_instance_of Array
