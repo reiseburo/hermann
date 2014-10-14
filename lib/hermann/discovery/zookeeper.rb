@@ -1,10 +1,11 @@
 require 'hermann'
 require 'zk'
 require 'json'
+require 'hermann/errors'
 
 module Hermann
   module Discovery
-    class NoBrokersError < StandardError; end
+
 
     # Communicates with Zookeeper to discover kafka broker ids
     #
@@ -24,12 +25,16 @@ module Hermann
       #    of 20 times the tickTime2 times the tick time set on server"
       #
       # @return [String] comma separated list of brokers
+      #
+      # @raises [NoBrokersError] if could not discover brokers thru zookeeper
       def get_brokers(timeout=0)
         brokers = []
         ZK.open(zookeepers, {:timeout => timeout}) do |zk|
           brokers = fetch_brokers(zk)
         end
-        raise NoBrokersError if brokers.empty?
+        if brokers.empty?
+          raise Hermann::Errors::NoBrokersError
+        end
         brokers.join(',')
       end
 

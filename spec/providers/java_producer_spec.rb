@@ -1,13 +1,12 @@
 require 'spec_helper'
 require 'hermann/provider/java_producer'
+require 'hermann/errors'
 
 describe Hermann::Provider::JavaProducer, :platform => :java  do
-  subject(:producer) { described_class.new(zookeepers) }
+  subject(:producer) { described_class.new(brokers) }
 
   let(:topic)      { 'rspec' }
-  let(:zookeepers) { 'localhost:2181' }
   let(:brokers)    { '0:1337'}
-
 
   describe '#push_single' do
     subject(:result) { producer.push_single('foo', topic, nil) }
@@ -37,7 +36,9 @@ describe Hermann::Provider::JavaProducer, :platform => :java  do
 
       context 'with a bad broker configuration' do
         let(:brokers) { '' }
-        it_behaves_like 'an error condition'
+        it 'raises error' do
+          expect{described_class.new(brokers)}.to raise_error(Hermann::Errors::ConfigurationError)
+        end
       end
 
       context 'with a non-existing broker' do
@@ -54,6 +55,46 @@ describe Hermann::Provider::JavaProducer, :platform => :java  do
       context 'with a bad topic' do
         let(:topic) { '' }
         it_behaves_like 'an error condition'
+      end
+    end
+  end
+
+  describe '#create_properties' do
+    subject { producer.send(:create_properties, brokers, opts) }
+    let(:opts)    { {'f'=>'1'} }
+    let(:result)  {
+                    Hermann::Provider::JavaProducer::DEFAULTS.merge({
+                      "metadata.broker.list"=>brokers, "f"=>"1"
+                    })
+                  }
+
+    it 'creates Properties' do
+      expect(subject).to eq result
+    end
+    context 'without brokers' do
+      let(:brokers) { '' }
+      it 'raises ConfigurationError' do
+        expect{ subject }.to raise_error(Hermann::Errors::ConfigurationError)
+      end
+    end
+  end
+
+  describe '#validate_property!' do
+    subject { producer.send(:validate_property!, foo, bar) }
+
+    context 'with valid property' do
+      let(:foo) { 'foo' }
+      let(:bar) { 'bar' }
+      it 'returns true' do
+        expect{ subject }.to_not raise_error
+      end
+    end
+
+    context 'with valid property' do
+      let(:foo) { '' }
+      let(:bar) { '' }
+      it 'returns false' do
+        expect{ subject }.to raise_error(Hermann::Errors::ConfigurationError)
       end
     end
   end
