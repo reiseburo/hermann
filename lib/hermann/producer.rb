@@ -62,7 +62,9 @@ module Hermann
 
       if RUBY_PLATFORM == "java"
         result = @internal.push_single(value, topic)
-        @children << result
+        unless result.nil?
+          @children << result
+        end
         # Reaping children on the push just to make sure that it does get
         # called correctly and we don't leak memory
         reap_children
