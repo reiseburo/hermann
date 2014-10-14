@@ -98,7 +98,7 @@ class RdKafkaRecipe < MiniPortile
             total = response.header["Content-Length"].to_i
 
             if total == 0
-              puts response.headers
+              puts response.inspect
               raise "Failed to properly download o_O"
             end
             response.read_body do |chunk|
