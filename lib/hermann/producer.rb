@@ -57,11 +57,11 @@ module Hermann
       result = nil
 
       if value.kind_of? Array
-        return value.map { |e| self.push(e) }
+        return value.map { |e| self.push(e, opts) }
       end
 
       if RUBY_PLATFORM == "java"
-        result = @internal.push_single(value, topic)
+        result = @internal.push_single(value, topic, nil)
         unless result.nil?
           @children << result
         end

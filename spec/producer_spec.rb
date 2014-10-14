@@ -7,34 +7,73 @@ describe Hermann::Producer do
   let(:topic) { 'rspec' }
   let(:brokers) { 'localhost:1337' }
 
-  context "java", :platform => :java do
-    describe '#create_result' do
-      subject { producer.create_result }
+  describe '#create_result' do
+    subject { producer.create_result }
 
-      it { should be_instance_of Hermann::Result }
+    it { should be_instance_of Hermann::Result }
 
-      it 'should add the result to the producers children' do
-        expect(producer.children).to be_empty
-        expect(subject).to be_instance_of Hermann::Result
-        expect(producer.children).to_not be_empty
+    it 'should add the result to the producers children' do
+      expect(producer.children).to be_empty
+      expect(subject).to be_instance_of Hermann::Result
+      expect(producer.children).to_not be_empty
+    end
+  end
+
+  describe '#push' do
+    let(:msg)   { 'foo' }
+    let(:passed_topic) { 'bar' }
+    context 'without topic passed' do
+      it 'uses initialized topic' do
+        expect(producer.internal).to receive(:push_single).with(msg, topic, anything)
+        producer.push(msg)
       end
     end
+    context 'with topic passed' do
+      it 'can change topic' do
+        expect(producer.internal).to receive(:push_single).with(msg, passed_topic, anything)
+        producer.push(msg, :topic => passed_topic)
+      end
 
-    describe '#push' do
-      let(:msg)   { 'foo' }
-      let(:passed_topic) { 'bar' }
-      context 'without topic passed' do
-        it 'uses initialized topic' do
-          expect_any_instance_of(Hermann::Provider::JavaProducer).to receive(:push_single).with(msg, topic)
-          producer.push(msg)
+      context 'and an array of messags' do
+        it 'should propagate the topic' do
+          messages = 3.times.map { |i| msg }
+          expect(producer.internal).to receive(:push_single).with(msg, passed_topic, anything).exactly(messages.size).times
+          producer.push(messages, :topic => passed_topic)
         end
       end
-      context 'with topic passed' do
-        it 'can change topic' do
-          expect_any_instance_of(Hermann::Provider::JavaProducer).to receive(:push_single).with(msg, passed_topic)
-          producer.push(msg, :topic => passed_topic)
-        end
+    end
+  end
+
+  describe '#create_result' do
+    subject { producer.create_result }
+
+    it { should be_instance_of Hermann::Result }
+
+    it 'should add the result to the producers children' do
+      expect(producer.children).to be_empty
+      expect(subject).to be_instance_of Hermann::Result
+      expect(producer.children).to_not be_empty
+    end
+  end
+
+  describe '#connected?' do
+    subject { producer.connected? }
+    context 'by default' do
+      before :each do
+        expect(producer.internal).to receive(:connected?).and_call_original
       end
+
+      it { should be false  }
+    end
+  end
+
+  describe '#connect' do
+    let(:timeout) { 0 }
+    subject(:connect!) { producer.connect(timeout) }
+
+    it 'should delegate connection to the underlying Producer' do
+      expect(producer.internal).to receive(:connect).and_call_original
+      connect!
     end
   end
 
@@ -95,39 +134,6 @@ describe Hermann::Producer do
             expect(elem).to be_instance_of Hermann::Result
           end
         end
-      end
-    end
-
-    describe '#create_result' do
-      subject { producer.create_result }
-
-      it { should be_instance_of Hermann::Result }
-
-      it 'should add the result to the producers children' do
-        expect(producer.children).to be_empty
-        expect(subject).to be_instance_of Hermann::Result
-        expect(producer.children).to_not be_empty
-      end
-    end
-
-    describe '#connected?' do
-      subject { producer.connected? }
-      context 'by default' do
-        before :each do
-          expect(producer.internal).to receive(:connected?).and_call_original
-        end
-
-        it { should be false  }
-      end
-    end
-
-    describe '#connect' do
-      let(:timeout) { 0 }
-      subject(:connect!) { producer.connect(timeout) }
-
-      it 'should delegate connection to the underlying Producer' do
-        expect(producer.internal).to receive(:connect).and_call_original
-        connect!
       end
     end
 

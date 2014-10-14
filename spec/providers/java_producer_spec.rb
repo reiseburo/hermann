@@ -10,7 +10,7 @@ describe Hermann::Provider::JavaProducer, :platform => :java  do
 
 
   describe '#push_single' do
-    subject(:result) { producer.push_single('foo', topic) }
+    subject(:result) { producer.push_single('foo', topic, nil) }
 
     let(:passed_topic) { 'foo' }
     before do
@@ -23,13 +23,13 @@ describe Hermann::Provider::JavaProducer, :platform => :java  do
 
     it 'can change topic' do
       expect(Hermann::ProducerUtil::KeyedMessage).to receive(:new).with(passed_topic, 'bar')
-      producer.push_single('bar', passed_topic).wait(1)
+      producer.push_single('bar', passed_topic, nil).wait(1)
     end
 
     context 'error conditions' do
       shared_examples 'an error condition' do
         it 'should be rejected' do
-          promise = producer.push_single('rspec', topic).wait(1)
+          promise = producer.push_single('rspec', topic, nil).wait(1)
           expect(promise).to be_rejected
           expect { promise.value! }.to raise_error
         end
