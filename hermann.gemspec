@@ -27,7 +27,7 @@ Gem::Specification.new do |s|
   s.add_dependency "zk", "~> 1.9.4"
 
   if RUBY_PLATFORM == "java"
-    s.add_runtime_dependency 'jar-dependencies', '~>0.1.2'
+    s.add_dependency 'jar-dependencies', '~>0.1.2'
     s.add_development_dependency 'ruby-maven', '~> 3.1.1.0'
     s.add_development_dependency 'rake'
     s.requirements << "jar org.apache.kafka:kafka_2.10, 0.8.1.1"
