@@ -2,10 +2,11 @@ require 'spec_helper'
 require 'hermann/producer'
 
 describe Hermann::Producer do
-  subject(:producer) { described_class.new(topic, brokers) }
+  subject(:producer) { described_class.new(topic, brokers, opts) }
 
   let(:topic) { 'rspec' }
   let(:brokers) { 'localhost:1337' }
+  let(:opts) { { 'request.required.acks' => '1' } }
 
   describe '#create_result' do
     subject { producer.create_result }

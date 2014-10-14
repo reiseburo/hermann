@@ -16,11 +16,11 @@ module Hermann
     #
     # @param [String] topic The default topic to use for pushing messages
     # @param [Array] brokers An array of "host:port" strings for the brokers
-    def initialize(topic, brokers)
+    def initialize(topic, brokers, opts={})
       @topic = topic
       @brokers = brokers
       if RUBY_PLATFORM == "java"
-        @internal = Hermann::Provider::JavaProducer.new(brokers)
+        @internal = Hermann::Provider::JavaProducer.new(brokers, opts)
       else
         @internal = Hermann::Lib::Producer.new(brokers)
       end
@@ -130,7 +130,7 @@ module Hermann
     end
 
     # Perform the actual reactor tick
-    # @raises [StandardError[ in case of underlying failures in librdkafka
+    # @raises [StandardError] in case of underlying failures in librdkafka
     def execute_tick(timeout)
       if timeout == 0
         @internal.tick(0)

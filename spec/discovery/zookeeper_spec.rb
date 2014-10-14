@@ -1,5 +1,6 @@
 require 'spec_helper'
 require 'hermann/discovery/zookeeper'
+require 'hermann/errors'
 
 describe Hermann::Discovery::Zookeeper do
   let(:zk) { double }
@@ -10,10 +11,21 @@ describe Hermann::Discovery::Zookeeper do
 
   describe '#get_brokers' do
     let(:broker_array) { ['f:1','a:2'] }
-    it 'gets a conna separated string of brokers' do
+    before do
       allow(ZK).to receive(:open).with(any_args).and_yield(zk)
-      allow(subject).to receive(:fetch_brokers).with(any_args) { broker_array }
-      expect(subject.get_brokers).to eq 'f:1,a:2'
+      allow(subject).to receive(:fetch_brokers).with(any_args) { brokers }
+    end
+    context 'with valid brokers' do
+      let(:brokers) { broker_array }
+      it 'gets valid string' do
+        expect(subject.get_brokers).to eq 'f:1,a:2'
+      end
+    end
+    context 'with no brokers' do
+      let(:brokers) { [] }
+      it 'raises an error' do
+        expect{ subject.get_brokers }.to raise_error(Hermann::Errors::NoBrokersError)
+      end
     end
   end
 
