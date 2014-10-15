@@ -37,6 +37,7 @@ Gem::Specification.new do |s|
     s.requirements << "jar org.slf4j:slf4j-api, 1.7.2"
     s.requirements << "jar com.101tec:zkclient, 0.3"
     s.require_paths = ["lib"]
+    s.platform = 'java'
   else
     s.add_dependency('mini_portile', '~> 0.6.0')
     s.extensions = Dir['ext/**/extconf.rb']
