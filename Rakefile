@@ -34,13 +34,12 @@ task :removetmp do
   FileUtils.rm_rf('tmp')
 end
 
-
-task :build => [:compile]
 task :clean => [:removetmp]
 
 if RUBY_PLATFORM == 'java'
   task :default => [:clean, :spec]
 else
+  task :build => [:compile]
   task :default => [:clean, :build, :spec]
 end
 
