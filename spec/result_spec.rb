@@ -25,8 +25,8 @@ describe Hermann::Result do
     end
   end
 
-  describe '#reap?' do
-    subject { result.reap? }
+  describe '#completed?' do
+    subject { result.completed? }
 
     context 'if state == :pending' do
       before(:each) { allow(result).to receive(:pending?) { true } }

@@ -97,7 +97,7 @@ module Hermann
         @children.each do |child|
           # Skip over any children that should already be reaped for other
           # reasons
-          next if child.reap?
+          next if child.completed?
           # Propagate errors to the remaining children
           child.internal_set_error(ex)
         end
@@ -112,7 +112,8 @@ module Hermann
     def reap_children
       # Filter all children who are no longer pending/fulfilled
       total_children = @children.size
-      @children = @children.reject { |c| c.reap? }
+
+      @children = @children.reject { |c| c.completed? }
 
       return (total_children - children.size)
     end
