@@ -97,7 +97,7 @@ module Hermann
         @children.each do |child|
           # Skip over any children that should already be reaped for other
           # reasons
-          next if child.reap?
+          next if child.completed?
           # Propagate errors to the remaining children
           child.internal_set_error(ex)
         end

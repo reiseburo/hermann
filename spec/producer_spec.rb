@@ -44,11 +44,12 @@ describe Hermann::Producer do
       end
     end
 
-    context 'when reaping children' do
+    context 'when reaping children', :platform => :java do
       subject { producer.push('f', :topic => passed_topic) }
+
       context 'with reapable children' do
         it 'should reap the children' do
-          promise = Concurrent::Promise.execute {'f'}.wait(1)
+          promise = Concurrent::Promise.execute { 'f' }.wait(1)
           producer.instance_variable_set(:@children, [promise])
           expect{subject}.to change{producer.children.size}.by(0)
         end
@@ -165,7 +166,7 @@ describe Hermann::Producer do
       before :each do
         3.times do
           child = Hermann::Result.new(producer)
-          allow(child).to receive(:reap?) { reap }
+          allow(child).to receive(:completed?) { reap }
           producer.children << child
         end
 
