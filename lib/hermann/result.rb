@@ -23,7 +23,7 @@ module Hermann
     end
 
     # @return [Boolean] True if this child can be reaped
-    def reap?
+    def completed?
       return true if rejected? || fulfilled?
       return false
     end

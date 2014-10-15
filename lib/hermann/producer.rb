@@ -112,7 +112,8 @@ module Hermann
     def reap_children
       # Filter all children who are no longer pending/fulfilled
       total_children = @children.size
-      @children = @children.reject { |c| c.reap? }
+
+      @children = @children.reject { |c| c.completed? }
 
       return (total_children - children.size)
     end

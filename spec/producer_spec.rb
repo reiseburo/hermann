@@ -43,6 +43,25 @@ describe Hermann::Producer do
         end
       end
     end
+
+    context 'when reaping children' do
+      subject { producer.push('f', :topic => passed_topic) }
+      context 'with reapable children' do
+        it 'should reap the children' do
+          promise = Concurrent::Promise.execute {'f'}.wait(1)
+          producer.instance_variable_set(:@children, [promise])
+          expect{subject}.to change{producer.children.size}.by(0)
+        end
+      end
+
+      context 'with no reapable children' do
+        it 'should not reap the children' do
+          promise = Concurrent::Promise.new {'f'}
+          producer.instance_variable_set(:@children, [promise])
+          expect{subject}.to change{producer.children.size}.by(1)
+        end
+      end
+    end
   end
 
   describe '#create_result' do
