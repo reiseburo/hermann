@@ -3,10 +3,11 @@ require 'hermann/provider/java_producer'
 require 'hermann/errors'
 
 describe Hermann::Provider::JavaProducer, :platform => :java  do
-  subject(:producer) { described_class.new(brokers) }
+  subject(:producer) { described_class.new(brokers, opts) }
 
   let(:topic)      { 'rspec' }
   let(:brokers)    { '0:1337'}
+  let(:opts)       { {} }
 
   describe '#push_single' do
     subject(:result) { producer.push_single('foo', topic, nil) }
@@ -43,13 +44,7 @@ describe Hermann::Provider::JavaProducer, :platform => :java  do
 
       context 'with a non-existing broker' do
         let(:brokers) { 'localhost:13337' }
-        let(:timeout) { 2 }
-        let(:value) { 'rspec' }
-
-        it 'should reject' do
-          future = result.wait(1)
-          expect(future).to be_rejected
-        end
+        it_behaves_like 'an error condition'
       end
 
       context 'with a bad topic' do
@@ -59,41 +54,24 @@ describe Hermann::Provider::JavaProducer, :platform => :java  do
     end
   end
 
-  describe '#create_properties' do
-    subject { producer.send(:create_properties, brokers, opts) }
+  describe '#create_config' do
     let(:opts)    { {'f'=>'1'} }
-    let(:result)  {
+    let(:options) {
                     Hermann::Provider::JavaProducer::DEFAULTS.merge({
                       "metadata.broker.list"=>brokers, "f"=>"1"
                     })
                   }
+    let(:producer_config) { double }
 
     it 'creates Properties' do
-      expect(subject).to eq result
+      expect(Hermann).to receive(:package_properties).with(options)
+      expect(Hermann::ProducerUtil::ProducerConfig).to receive(:new) { producer_config }
+      expect(Hermann::JavaApiUtil::Producer).to receive(:new) { double }
+      expect(subject).to_not be_nil
     end
     context 'without brokers' do
       let(:brokers) { '' }
       it 'raises ConfigurationError' do
-        expect{ subject }.to raise_error(Hermann::Errors::ConfigurationError)
-      end
-    end
-  end
-
-  describe '#validate_property!' do
-    subject { producer.send(:validate_property!, foo, bar) }
-
-    context 'with valid property' do
-      let(:foo) { 'foo' }
-      let(:bar) { 'bar' }
-      it 'returns true' do
-        expect{ subject }.to_not raise_error
-      end
-    end
-
-    context 'with valid property' do
-      let(:foo) { '' }
-      let(:bar) { '' }
-      it 'returns false' do
         expect{ subject }.to raise_error(Hermann::Errors::ConfigurationError)
       end
     end
