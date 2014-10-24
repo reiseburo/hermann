@@ -11,6 +11,13 @@ module Hermann
     class JavaProducer
       attr_accessor :producer
 
+      #default kafka Producer options
+      DEFAULTS = {
+                    'serializer.class'      => 'kafka.serializer.StringEncoder',
+                    'partitioner.class'     => 'kafka.producer.DefaultPartitioner',
+                    'request.required.acks' => '1',
+                    'message.send.max.retries' => '0'
+                  }.freeze
 
       # Instantiate JavaProducer
       #
@@ -25,16 +32,9 @@ module Hermann
       # JavaProducer.new('0:9092', {'request.required.acks' => '1'})
       #
       def initialize(brokers, opts={})
-        properties  = create_properties(brokers, opts)
-        config      = create_config(properties)
+        config      = create_config(brokers, opts)
         @producer   = JavaApiUtil::Producer.new(config)
       end
-
-      DEFAULTS = {
-                    'serializer.class'      => 'kafka.serializer.StringEncoder',
-                    'partitioner.class'     => 'kafka.producer.DefaultPartitioner',
-                    'request.required.acks' => '1'
-                  }.freeze
 
       # Push a value onto the Kafka topic passed to this +Producer+
       #
@@ -67,39 +67,21 @@ module Hermann
       end
 
       private
-
         # Creates a ProducerConfig object
         #
-        # @param [Properties] object with broker properties
-        #
-        # @return [ProducerConfig] - packaged config for +Producer+
-        def create_config(properties)
-          ProducerUtil::ProducerConfig.new(properties)
-        end
-
-        # Creates Properties Object
+        # @param [String] comma separated list of brokers
         #
         # @param [Hash] brokers passed into this function
         # @option args [String] :brokers - string of brokers
         #
-        # @return [Properties] properties object for creating +ProducerConfig+
+        # @return [ProducerConfig] - packaged config for +Producer+
         #
         # @raises [RuntimeError] if options does not contain key value strings
-        def create_properties(brokers, opts={})
-          brokers = { 'metadata.broker.list' => brokers }
-          options = DEFAULTS.merge(brokers).merge(opts)
-          properties = JavaUtil::Properties.new
-          options.each do |key, val|
-            validate_property!(key, val)
-            properties.put(key, val)
-          end
-          properties
-        end
-
-        def validate_property!(key, val)
-          if key.to_s.empty? || val.to_s.empty?
-            raise Hermann::Errors::ConfigurationError, "Invalid Broker Properties"
-          end
+        def create_config(brokers, opts={})
+          brokers    = { 'metadata.broker.list' => brokers }
+          options    = DEFAULTS.merge(brokers).merge(opts)
+          properties = Hermann.package_properties(options)
+          ProducerUtil::ProducerConfig.new(properties)
         end
     end
   end
