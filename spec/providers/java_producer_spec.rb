@@ -13,9 +13,6 @@ describe Hermann::Provider::JavaProducer, :platform => :java  do
     subject(:result) { producer.push_single('foo', topic, nil) }
 
     let(:passed_topic) { 'foo' }
-    before do
-      allow_any_instance_of(described_class).to receive(:broker_list) { brokers }
-    end
 
     it 'returns an executing Promise' do
       expect(result.wait(1).pending?).to eq false
@@ -50,6 +47,18 @@ describe Hermann::Provider::JavaProducer, :platform => :java  do
       context 'with a bad topic' do
         let(:topic) { '' }
         it_behaves_like 'an error condition'
+      end
+
+      context 'when the broker is down' do
+        before :each do
+          expect(producer.producer).to receive(:send).and_raise(::Java::KafkaCommon::FailedToSendMessageException.new('rspec', nil))
+        end
+
+        it 'should raise a ConnectivityError' do
+          expect {
+            result.value!
+          }.to raise_error(Hermann::Errors::ConnectivityError)
+        end
       end
     end
   end
