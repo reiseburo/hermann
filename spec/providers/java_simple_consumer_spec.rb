@@ -39,13 +39,25 @@ describe Hermann::Provider::JavaSimpleConsumer, :platform => :java  do
   end
 
   describe '#get_stream' do
-    subject { consumer.send(:get_stream) }
+    subject { consumer.send(:get_stream, topic) }
 
     let(:map) { { topic => ['foo'] } }
 
-    it 'gets the consumer stream' do
-      allow(internal_consumer).to receive(:createMessageStreams) { map }
-      expect(subject).to eq 'foo'
+    context 'without topic' do
+      let(:topic) { nil }
+      it 'gets the consumer stream' do
+        allow(internal_consumer).to receive(:createMessageStreams) { map }
+        expect(subject).to eq 'foo'
+      end
+    end
+
+    context 'with topic' do
+      let(:topic) { 'topic' }
+      it 'gets the consumer stream' do
+        allow(internal_consumer).to receive(:createMessageStreams) { map }
+        expect(map).to receive(:[]).with(topic) { ['foo'] }
+        expect(subject).to eq 'foo'
+      end
     end
   end
 
