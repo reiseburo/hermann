@@ -379,13 +379,12 @@ void consumer_consume_loop(HermannInstanceConfig* consumerConfig) {
 }
 
 /**
- * Hermann::Consumer.consume
- *
- * Begin listening on the configured topic for messages.  msg_consume will be called on each message received.
+ * Hermann::Lib::Consumer.consume
  *
  * @param   VALUE   self	the Ruby object for this consumer
+ * @param   VALUE   topic	the Ruby string representing a topic to consume
  */
-static VALUE consumer_consume(VALUE self) {
+static VALUE consumer_consume(VALUE self, VALUE topic) {
 
 	HermannInstanceConfig* consumerConfig;
 
@@ -1012,7 +1011,7 @@ void Init_hermann_lib() {
 	rb_define_method(c_consumer, "initialize_copy", consumer_init_copy, 1);
 
 	/* Consumer has method 'consume' */
-	rb_define_method( c_consumer, "consume", consumer_consume, 0 );
+	rb_define_method( c_consumer, "consume", consumer_consume, 1);
 
 	/* ---- Define the producer class ---- */
 	c_producer = rb_define_class_under(lib_module, "Producer", rb_cObject);

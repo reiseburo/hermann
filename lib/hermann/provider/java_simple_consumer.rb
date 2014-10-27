@@ -40,15 +40,17 @@ module Hermann
       # Starts infinite loop to consume messages. hasNext() blocks until a
       # message is available at which point it is yielded to the block
       #
+      # @params [String] optional topic to override initialized topic
+      #
       # ==== Examples
       #
       # consumer.consume do |message|
       #   puts "Received: #{message}"
       # end
       #
-      def consume
+      def consume(topic=nil)
         begin
-          stream = get_stream
+          stream = get_stream(topic)
           it = stream.iterator
           while it.hasNext do
             yield it.next.message.to_s
@@ -74,12 +76,15 @@ module Hermann
         # Gets the message stream of the topic. Creates message streams for
         # a topic and the number of threads requested.  In this case the default
         # number of threads is NUM_THREADS.
-        def get_stream
+        #
+        # @params [String] optional topic to override initialized topic
+        def get_stream(topic)
+          current_topic = topic || @topic
           @topicCountMap = JavaUtil::HashMap.new
           @value         = NUM_THREADS.to_java Java::int
-          @topicCountMap.put("#{@topic}", @value)
+          @topicCountMap.put("#{current_topic}", @value)
           consumerMap = @consumer.createMessageStreams(@topicCountMap)
-          consumerMap[@topic].first
+          consumerMap[current_topic].first
         end
 
         # Creates a ConsumerConfig object

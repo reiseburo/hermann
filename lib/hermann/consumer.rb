@@ -38,8 +38,8 @@ module Hermann
       end
     end
 
-    def consume(&block)
-      @internal.consume(&block)
+    def consume(topic=nil, &block)
+      @internal.consume(topic, &block)
     end
   end
 end
