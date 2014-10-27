@@ -15,6 +15,7 @@ RSpec.configure do |c|
   shared_context 'integration test context', :type => :integration do
     let(:topic) { $integrationconf['kafka']['topic'] }
     let(:brokers) { $integrationconf['kafka']['brokers'] }
+    let(:zookeepers) { $integrationconf['zookeepers'] }
   end
 end
 

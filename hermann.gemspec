@@ -27,6 +27,7 @@ Gem::Specification.new do |s|
   s.add_dependency "zk", "~> 1.9.4"
 
   if RUBY_PLATFORM == "java"
+    #IMPORTANT: make sure that jar-dependencies is only a development dependency of your gem. if it is a runtime dependencies the require_jars file will be overwritten during installation.
     s.add_dependency 'jar-dependencies', '~>0.1.2'
     s.add_development_dependency 'ruby-maven', '~> 3.1.1.0'
     s.add_development_dependency 'rake'

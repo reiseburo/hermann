@@ -37,6 +37,13 @@ module Hermann
         @do_retry    = opts.delete(:do_retry)   || true
       end
 
+      # Shuts down the various threads created by createMessageStreams
+      # This can be called after the thread executing consume has exited
+      # to clean up.
+      def shutdown
+        @consumer.shutdown
+      end
+
       # Starts infinite loop to consume messages. hasNext() blocks until a
       # message is available at which point it is yielded to the block
       #
