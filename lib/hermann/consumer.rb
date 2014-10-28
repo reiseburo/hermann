@@ -38,8 +38,18 @@ module Hermann
       end
     end
 
+    # Delegates the consume method to internal consumer classes
     def consume(topic=nil, &block)
       @internal.consume(topic, &block)
+    end
+
+    # Delegates the shutdown of kafka messages threads to internal consumer classes
+    def shutdown
+      if Hermann.jruby?
+        @internal.shutdown
+      else
+        #no op
+      end
     end
   end
 end

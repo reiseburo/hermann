@@ -37,19 +37,38 @@ describe Hermann::Consumer do
         it_behaves_like 'an error condition'
       end
     end
+
+    describe '#shutdown' do
+      it 'does nothing' do
+        expect(consumer.shutdown).to be nil
+      end
+    end
   end
 
   context 'on Jruby', :platform => :java do
     subject(:consumer) { described_class.new(topic, groupId, zookeepers) }
 
-    let(:zookeepers)  { 'localhost:2181' }
+    let(:zookeepers) { 'localhost:2181' }
     let(:groupId)    { 'groupId' }
     let(:do_retry)   { true }
     let(:sleep_time) { 1 }
+    let(:internal)   { double('Hermann::Provider::JavaSimpleConsumer')}
+
+    before do
+      allow(Hermann::ConsumerUtil::Consumer).to receive(:createJavaConsumerConnector).with(any_args) { double }
+    end
 
     it 'creates a Hermann::Provider::JavaSimpleConsumer' do
-      allow(Hermann::ConsumerUtil::Consumer).to receive(:createJavaConsumerConnector).with(any_args) { double }
       expect(subject.internal).to be_a(Hermann::Provider::JavaSimpleConsumer)
+    end
+
+    describe '#shutdown' do
+      let(:result) { double('NoClass') }
+      it 'calls shutdown' do
+        consumer.instance_variable_set(:@internal, internal)
+        allow(internal).to receive(:shutdown) { result }
+        expect(consumer.shutdown).to eq result
+      end
     end
   end
 end
