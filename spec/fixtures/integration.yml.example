@@ -1,3 +1,4 @@
 kafka:
   brokers: "localhost:12345"
   topic: "testing-topic"
+zookeepers: "localhost:2181"
