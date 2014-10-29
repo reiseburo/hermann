@@ -20,7 +20,7 @@ module Hermann
     def initialize(topic, brokers, opts={})
       @topic = topic
       @brokers = ThreadSafe::Array.new(brokers)
-      if RUBY_PLATFORM == "java"
+      if Hermann.jruby?
         @internal = Hermann::Provider::JavaProducer.new(brokers, opts)
       else
         @internal = Hermann::Lib::Producer.new(brokers.join(','))
@@ -61,7 +61,7 @@ module Hermann
         return value.map { |e| self.push(e, opts) }
       end
 
-      if RUBY_PLATFORM == "java"
+      if Hermann.jruby?
         result = @internal.push_single(value, topic, nil)
         unless result.nil?
           @children << result
@@ -70,6 +70,9 @@ module Hermann
         # called correctly and we don't leak memory
         reap_children
       else
+        # Ticking reactor to make sure that we don't inadvertantly let the
+        # librdkafka callback queue overflow
+        tick_reactor
         result = create_result
         @internal.push_single(value, topic, result)
       end
@@ -118,7 +121,6 @@ module Hermann
 
       return (total_children - children.size)
     end
-
 
     private
 
