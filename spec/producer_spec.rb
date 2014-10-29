@@ -8,6 +8,21 @@ describe Hermann::Producer do
   let(:brokers) { ['localhost:1337'] }
   let(:opts) { { 'request.required.acks' => '1' } }
 
+  describe '#initialize' do
+    context 'with C ruby', :platform => :mri do
+      it 'joins broker array' do
+        expect(Hermann::Lib::Producer).to receive(:new).with(brokers.first)
+        expect(producer).to be_a Hermann::Producer
+      end
+    end
+    context 'with Java', :platform => :java do
+      it 'joins broker array' do
+        expect(Hermann::Provider::JavaProducer).to receive(:new).with(brokers.first, opts)
+        expect(producer).to be_a Hermann::Producer
+      end
+    end
+  end
+
   describe '#create_result' do
     subject { producer.create_result }
 

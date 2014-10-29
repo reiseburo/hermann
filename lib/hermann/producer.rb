@@ -21,7 +21,7 @@ module Hermann
       @topic = topic
       @brokers = ThreadSafe::Array.new(brokers)
       if Hermann.jruby?
-        @internal = Hermann::Provider::JavaProducer.new(brokers, opts)
+        @internal = Hermann::Provider::JavaProducer.new(brokers.join(','), opts)
       else
         @internal = Hermann::Lib::Producer.new(brokers.join(','))
       end
