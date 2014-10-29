@@ -7,6 +7,8 @@ else
 end
 
 module Hermann
+  # Hermann::Consumer provides a simple consumer API which is only safe to be
+  # executed in a single thread
   class Consumer
     attr_reader :topic, :brokers, :partition, :internal
 
