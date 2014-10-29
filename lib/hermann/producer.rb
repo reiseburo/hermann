@@ -23,7 +23,7 @@ module Hermann
       if RUBY_PLATFORM == "java"
         @internal = Hermann::Provider::JavaProducer.new(brokers, opts)
       else
-        @internal = Hermann::Lib::Producer.new(brokers)
+        @internal = Hermann::Lib::Producer.new(brokers.join(','))
       end
       # We're tracking children so we can make sure that at Producer exit we
       # make a reasonable attempt to clean up outstanding result objects

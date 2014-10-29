@@ -5,7 +5,7 @@ describe Hermann::Producer do
   subject(:producer) { described_class.new(topic, brokers, opts) }
 
   let(:topic) { 'rspec' }
-  let(:brokers) { 'localhost:1337' }
+  let(:brokers) { ['localhost:1337'] }
   let(:opts) { { 'request.required.acks' => '1' } }
 
   describe '#create_result' do
@@ -115,7 +115,7 @@ describe Hermann::Producer do
         end
 
         context 'with a non-existing broker' do
-          let(:brokers) { 'localhost:13337' }
+          let(:brokers) { ['localhost:13337'] }
           let(:timeout) { 2 }
           let(:value) { 'rspec' }
 
