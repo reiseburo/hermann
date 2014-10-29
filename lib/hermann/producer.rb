@@ -1,6 +1,7 @@
+require 'thread_safe'
+
 require 'hermann'
 require 'hermann/result'
-
 
 if RUBY_PLATFORM == "java"
   require 'hermann/provider/java_producer'
@@ -26,7 +27,7 @@ module Hermann
       end
       # We're tracking children so we can make sure that at Producer exit we
       # make a reasonable attempt to clean up outstanding result objects
-      @children = []
+      @children = ThreadSafe::Array.new
     end
 
     # @return [Boolean] True if our underlying producer object thinks it's

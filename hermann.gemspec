@@ -25,6 +25,7 @@ Gem::Specification.new do |s|
 
   s.add_dependency 'concurrent-ruby', '~> 0.7.0'
   s.add_dependency "zk", "~> 1.9.4"
+  s.add_dependency 'thread_safe', '~> 0.3.4'
 
   if RUBY_PLATFORM == "java"
     #IMPORTANT: make sure that jar-dependencies is only a development dependency of your gem. if it is a runtime dependencies the require_jars file will be overwritten during installation.
