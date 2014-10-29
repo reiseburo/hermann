@@ -19,7 +19,7 @@ module Hermann
     # @param [Array] brokers An array of "host:port" strings for the brokers
     def initialize(topic, brokers, opts={})
       @topic = topic
-      @brokers = brokers
+      @brokers = ThreadSafe::Array.new(brokers)
       if RUBY_PLATFORM == "java"
         @internal = Hermann::Provider::JavaProducer.new(brokers, opts)
       else
