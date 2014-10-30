@@ -57,6 +57,30 @@ p.tick_reactor
 f.state
 ```
 
+### Consumer
+
+Messages can be consumed by calling the consume method and passing a block to handle the yielded messages.  The consume method blocks, so take care to handle that functionality appropriately (i.e. use Concurrent::Promise, Thread, etc).
+
+#### (JRuby-only)
+```ruby
+require 'hermann'
+require 'hermann/consumer'
+require 'hermann_jars'
+
+zookeepers = "localhost:2181"
+groupId   = "group1"
+topic     = 'topic'
+new_topic = 'other_topic'
+
+the_consumer = Hermann::Consumer.new(topic, groupId, zookeepers)
+
+the_consumer.consume(new_topic) do |msg|   # can change topic with optional argument to .consume
+  puts "Recv: #{msg}"
+end
+```
+
+
+
 #### How to convert from using jruby-kafka
 
 * Gemfile
