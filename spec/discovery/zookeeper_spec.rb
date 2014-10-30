@@ -18,7 +18,7 @@ describe Hermann::Discovery::Zookeeper do
     context 'with valid brokers' do
       let(:brokers) { broker_array }
       it 'gets valid string' do
-        expect(subject.get_brokers).to eq 'f:1,a:2'
+        expect(subject.get_brokers).to eq broker_array
       end
     end
     context 'with no brokers' do

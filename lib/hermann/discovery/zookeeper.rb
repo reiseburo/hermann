@@ -24,8 +24,7 @@ module Hermann
       #    tickTime (as set in the server configuration) and a maximum
       #    of 20 times the tickTime2 times the tick time set on server"
       #
-      # @return [String] comma separated list of brokers
-      #
+      # @return [Array] List of brokers from ZK
       # @raises [NoBrokersError] if could not discover brokers thru zookeeper
       def get_brokers(timeout=0)
         brokers = []
@@ -35,7 +34,7 @@ module Hermann
         if brokers.empty?
           raise Hermann::Errors::NoBrokersError
         end
-        brokers.join(',')
+        return brokers
       end
 
       private
