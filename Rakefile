@@ -11,21 +11,25 @@ Rake::ExtensionTask.new do |t|
   t.gem_spec = Gem::Specification.load('hermann.gemspec')
 end
 
-RSpec::Core::RakeTask.new(:spec) do |r|
-  options = ['--tag ~type:integration']
-
+def add_rspec_options(options)
   if RUBY_PLATFORM == 'java'
     options << '--tag ~platform:mri'
   else
     options << '--tag ~platform:java'
   end
+  return options
+end
+
+RSpec::Core::RakeTask.new(:spec) do |r|
+  options = add_rspec_options(['--tag ~type:integration'])
 
   r.rspec_opts = options.join(' ')
 end
 
 namespace :spec do
   RSpec::Core::RakeTask.new(:integration) do |r|
-    r.rspec_opts = '--tag type:integration'
+    options = add_rspec_options(['--tag type:integration'])
+    r.rspec_opts = options.join(' ')
   end
 end
 
