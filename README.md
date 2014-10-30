@@ -91,17 +91,7 @@ end
   * removed unecessary jars from your Jarfile (i.e. kafka, log4j)
   * jar dependencies are automatically included with Hermann
   * ```jbundle install```
-
-```ruby
-require 'hermann'
-require 'hermann_jars'
-require 'hermann/discovery/zookeeper'
-#look in zookeeper for kafka brokers under the path /brokers/ids
-kafka_broker_ids = Hermann::Discovery::Zookeeper.new('localhost:2181').get_brokers
-producer = Hermann::Producer.new('topic', kafka_broker_ids)
-promise = producer.push("foo")  # returns Concurrent::Promise
-promise.value!
-```
+* Test out one of the Producer/Consumer examples above
 
 ### Integration Testing
 
@@ -110,7 +100,7 @@ promise.value!
  * set port 2181
 * Start Kafka
   * Set properties file ```zookeeper.connect=localhost:2181```
-* bundle exec jruby -S rspec spec/integration
+* ```bundle exec jruby -S rspec spec/integration```
 
 
 
