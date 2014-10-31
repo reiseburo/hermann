@@ -19,7 +19,7 @@ describe Hermann::Provider::JavaProducer, :platform => :java  do
     end
 
     it 'can change topic' do
-      expect(Hermann::ProducerUtil::KeyedMessage).to receive(:new).with(passed_topic, 'bar')
+      expect(Hermann::ProducerUtil::KeyedMessage).to receive(:new).with(passed_topic, anything)
       producer.push_single('bar', passed_topic, nil).wait(1)
     end
 

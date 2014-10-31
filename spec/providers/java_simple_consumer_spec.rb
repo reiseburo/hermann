@@ -17,17 +17,17 @@ describe Hermann::Provider::JavaSimpleConsumer, :platform => :java  do
   describe '#consume' do
     let(:stream)   { double }
     let(:iterator) { double }
-    let(:msg)      { double }
+    let(:msg)      { "rspec-message".to_java_bytes }
 
     it 'yields messages one at a time' do
       allow(consumer).to receive(:get_stream) { stream }
       allow(stream).to receive(:iterator) { iterator }
       allow(iterator).to receive(:hasNext).and_return(true, false)
-      allow(iterator).to receive_message_chain(:next, :message, :to_s) { msg }
+      allow(iterator).to receive_message_chain(:next, :message) { msg }
 
-      expect{ |b|
+      expect { |b|
         subject.consume(&b)
-      }.to yield_with_args(msg)
+      }.to yield_with_args(String.from_java_bytes(msg))
     end
     it 'retries consuming if there is an exception' do
       allow(consumer).to receive(:get_stream).and_raise(StandardError)

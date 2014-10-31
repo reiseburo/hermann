@@ -1,0 +1,16 @@
+package hermann;
+
+// Generate Ruby stubs with:  protoc --ruby_out=. spec/fixtures/testevent.proto 
+
+enum States {
+  FULFILLED = 1;
+  UNFULFILLED = 2;
+  PENDING = 3;
+  REJECTED = 4;
+}
+
+message TestEvent {
+  required string name = 1;
+  required States state = 2;
+  optional int32 bogomips = 3;
+}
