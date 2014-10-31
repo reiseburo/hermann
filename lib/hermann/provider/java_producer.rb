@@ -13,7 +13,6 @@ module Hermann
 
       #default kafka Producer options
       DEFAULTS = {
-                    'serializer.class'      => 'kafka.serializer.StringEncoder',
                     'partitioner.class'     => 'kafka.producer.DefaultPartitioner',
                     'request.required.acks' => '1',
                     'message.send.max.retries' => '0'
@@ -46,7 +45,7 @@ module Hermann
       #   will be set
       def push_single(msg, topic, unused)
         Concurrent::Promise.execute {
-          data = ProducerUtil::KeyedMessage.new(topic, msg)
+          data = ProducerUtil::KeyedMessage.new(topic, msg.to_java_bytes)
           begin
             @producer.send(data)
           rescue Java::KafkaCommon::FailedToSendMessageException => jexc
