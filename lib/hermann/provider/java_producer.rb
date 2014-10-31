@@ -46,12 +46,16 @@ module Hermann
       #   will be set
       def push_single(msg, topic, unused)
         Concurrent::Promise.execute {
-          data = ProducerUtil::KeyedMessage.new(topic, msg)
           begin
+          data = ProducerUtil::KeyedMessage.new(topic, msg)
+          # begin
             @producer.send(data)
-          rescue Java::KafkaCommon::FailedToSendMessageException => jexc
-            raise Hermann::Errors::ConnectivityError.new(jexc.message,
-                                                         :java_exception => jexc)
+          rescue Exception => e
+          # rescue Java::KafkaCommon::FailedToSendMessageException => jexc
+            # raise Hermann::Errors::ConnectivityError.new(jexc.message,
+            #                                              :java_exception => jexc)
+            puts "............#{e.message}"
+            puts e.backtrace.join("\n")
           end
         }
       end

@@ -60,7 +60,7 @@ module Hermann
           stream = get_stream(topic)
           it = stream.iterator
           while it.hasNext do
-            yield it.next.message.to_s
+            yield it.next
           end
         rescue Exception => e
           puts "#{self.class.name}#consume exception: #{e.class.name}"

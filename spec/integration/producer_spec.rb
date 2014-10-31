@@ -12,7 +12,7 @@ describe 'producer' do
   include_context 'integration test context'
 
   let(:timeout) { 10 }
-  let(:message)   { 'msg' }
+  let(:message) { 'msg' }
   let(:consumer) do
     Hermann::Consumer.new(topic, 'rspec-group', zookeepers)
   end
@@ -22,33 +22,37 @@ describe 'producer' do
       puts "consuming off `#{topic}`"
       consumer.consume(topic) do |dequeued|
         puts "received the message: #{dequeued.inspect}"
-        value = dequeued
+
+        buffer = dequeued.message.to_a
+        # value = String.from_java_bytes(dequeued.message)
+        value = buffer.pack('C*').encode('UTF-8', {:invalid => :replace, :undef => :replace, :replace => ''})
+        # puts ".......................encoding: #{buffer.pack('c*')} #{buffer.pack('c*').encoding}"
+
+        # value = buffer.pack('c*').encode("ASCII-8BIT", {:invalid => :replace, :undef => :replace, :replace => ''})
+        puts value
         consumer.shutdown
       end
       # Return this out of the block
-      next value
+      value
     end
   end
-  let(:brokers) do
+  let(:brokers_array) do
     broker_ids = Hermann::Discovery::Zookeeper.new(zookeepers).get_brokers
     puts "using ZK discovered brokers: #{broker_ids}"
     broker_ids
   end
-  let(:producer) { Hermann::Producer.new(nil, brokers) }
-
-
+  let(:producer) { Hermann::Producer.new(nil, brokers_array) }
 
   it 'produces and consumes messages', :type => :integration, :platform => :java do
     producer.push(message, :topic => topic).value!(timeout)
     expect(consumer_promise.value!(timeout)).to eql(message)
   end
 
-
   context 'with binary data', :type => :integration, :platform => :java do
     let(:event) do
       Hermann::TestEvent.new(:name => 'rspec',
                              :state => 3,
-                            :bogomips => 9001)
+                             :bogomips => 9001)
     end
 
     let(:message) { event.encode }
@@ -56,7 +60,7 @@ describe 'producer' do
     it 'should be a thing' do
       producer.push(message, :topic => topic).value!(timeout)
       dequeued = consumer_promise.value!(timeout)
-      expect(dequeued).to eql(message)
+      expect(dequeued).to eql(message.encode!('UTF-8', {:invalid => :replace, :undef => :replace, :replace => ''}))
 
       expect {
         Hermann::TestEvent.decode(dequeued)

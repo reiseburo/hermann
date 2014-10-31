@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'yaml'
 require 'rspec'
+require 'pry'
 
 # Add ext/ to the load path so we can load `hermann_lib`
 $LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__) + '/../ext/'))
