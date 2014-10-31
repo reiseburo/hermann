@@ -14,7 +14,7 @@ describe 'producer' do
   let(:timeout) { 10 }
   let(:message)   { 'msg' }
   let(:consumer) do
-    Hermann::Consumer.new(topic, "rspec-group-#{rand.to_s}", zookeepers)
+    Hermann::Consumer.new(topic, "rspec-group", zookeepers)
   end
   let(:consumer_promise) do
     Concurrent::Promise.execute do

@@ -10,7 +10,7 @@ module Hermann
       # @param [Hash[ options
       # @option options [Java::Lang::RuntimeException] :java_exception An
       #   underlying Java exception
-      def initialize(message, options={})
+      def initialize(message='', options={})
         super(message)
         @java_exception = options[:java_exception]
       end
