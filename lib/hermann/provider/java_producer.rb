@@ -52,6 +52,9 @@ module Hermann
           rescue Java::KafkaCommon::FailedToSendMessageException => jexc
             raise Hermann::Errors::ConnectivityError.new(jexc.message,
                                                          :java_exception => jexc)
+          rescue => e
+            raise Hermann::Errors::GeneralError.new(e.message,
+                                                         :java_exception => e)
           end
         }
       end

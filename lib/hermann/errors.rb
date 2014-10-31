@@ -1,8 +1,7 @@
 
 module Hermann
   module Errors
-    # Error for connectivity problems with the Kafka brokers
-    class ConnectivityError < StandardError
+    class GeneralError < StandardError
       attr_reader :java_exception
 
       # Initialize a connectivity error
@@ -17,11 +16,14 @@ module Hermann
       end
     end
 
+    # Error for connectivity problems with the Kafka brokers
+    class ConnectivityError < GeneralError; end
+
     # For passing incorrect config and options to kafka
-    class ConfigurationError < StandardError; end
+    class ConfigurationError < GeneralError; end
 
     # cannot discover brokers from zookeeper
-    class NoBrokersError < StandardError; end
+    class NoBrokersError < GeneralError; end
   end
 end
 
