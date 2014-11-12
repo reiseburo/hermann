@@ -37,6 +37,7 @@ Gem::Specification.new do |s|
     s.requirements << "jar org.scala-lang:scala-library, 2.10.1"
     s.requirements << "jar com.yammer.metrics:metrics-core, 2.2.0"
     s.requirements << "jar org.slf4j:slf4j-api, 1.7.2"
+    s.requirements << "jar log4j:log4j, 1.2.17"
     s.requirements << "jar com.101tec:zkclient, 0.3"
     s.require_paths = ["lib"]
     s.platform = 'java'
