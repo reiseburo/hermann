@@ -29,14 +29,14 @@ describe 'producer' do
       next value
     end
   end
-  let(:brokers) do
+  let(:broker_ids) do
     broker_ids = Hermann::Discovery::Zookeeper.new(zookeepers).get_brokers
+    puts ""
     puts "using ZK discovered brokers: #{broker_ids}"
+    puts ""
     broker_ids
   end
-  let(:producer) { Hermann::Producer.new(nil, brokers) }
-
-
+  let(:producer) { Hermann::Producer.new(nil, broker_ids) }
 
   it 'produces and consumes messages', :type => :integration, :platform => :java do
     producer.push(message, :topic => topic).value!(timeout)
@@ -48,7 +48,7 @@ describe 'producer' do
     let(:event) do
       Hermann::TestEvent.new(:name => 'rspec',
                              :state => 3,
-                            :bogomips => 9001)
+                             :bogomips => 9001)
     end
 
     let(:message) { event.encode }

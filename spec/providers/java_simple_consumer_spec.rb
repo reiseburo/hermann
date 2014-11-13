@@ -3,12 +3,13 @@ require 'hermann/provider/java_simple_consumer'
 require 'hermann/errors'
 
 describe Hermann::Provider::JavaSimpleConsumer, :platform => :java  do
-  subject(:consumer) { described_class.new(zookeeper, groupId, topic) }
+  subject(:consumer) { described_class.new(zookeeper, groupId, topic, {:logger => logger}) }
 
   let(:zookeeper)         { 'localhost:2181' }
   let(:groupId)           { 'groupId' }
   let(:topic)             { 'topic' }
   let(:internal_consumer) { double('ConsumerUtil::Consumer') }
+  let(:logger)            { double('logger') }
 
   before do
     allow(Hermann::ConsumerUtil::Consumer).to receive(:createJavaConsumerConnector).with(any_args) { internal_consumer }
@@ -31,10 +32,18 @@ describe Hermann::Provider::JavaSimpleConsumer, :platform => :java  do
     end
     it 'retries consuming if there is an exception' do
       allow(consumer).to receive(:get_stream).and_raise(StandardError)
-      #artificially allow one one retry
-      allow(consumer).to receive(:retry?).and_return(true, false)
-      expect(consumer).to receive(:sleep).once
-      expect{ |b| subject.consume(&b) }.to raise_error(StandardError)
+      expect(consumer).to receive(:sleep).exactly(3).times
+      expect(logger).to receive(:error).exactly(3).times
+      expect{ |b| consumer.consume(&b) }.to raise_error(StandardError)
+    end
+
+    context 'with no logger' do
+      subject(:consumer) { described_class.new(zookeeper, groupId, topic, {}) }
+      it 'does not call logger' do
+        allow(consumer).to receive(:get_stream).and_raise(StandardError)
+        allow(consumer).to receive(:sleep)
+        expect{ |b| consumer.consume(&b) }.to raise_error(StandardError)
+      end
     end
   end
 

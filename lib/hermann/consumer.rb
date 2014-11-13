@@ -21,11 +21,9 @@ module Hermann
     #
     # @params [String] comma separated zookeeper list
     #
-    # @params [Hash] options for consumer
+    # @params [Hash] options for Consumer
     # @option opts [String] :brokers   (for MRI) Comma separated list of brokers
     # @option opts [String] :partition (for MRI) The kafka partition
-    # @option opts [Fixnum]  :sleep_time (Jruby) Time to sleep between consume retries, defaults to 1sec
-    # @option opts [Boolean] :do_retry (Jruby) Retry consume attempts if exceptions are thrown, defaults to true
     def initialize(topic, groupId, zookeepers, opts={})
       @topic = topic
       @brokers = brokers
