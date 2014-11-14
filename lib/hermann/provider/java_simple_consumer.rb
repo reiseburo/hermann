@@ -12,11 +12,18 @@ module Hermann
       NUM_THREADS = 1
 
       #default zookeeper connection options
-      DEFAULTS = {
-                   'zookeeper.session.timeout.ms' => '400',
-                   'zookeeper.sync.time.ms'       => '200',
-                   'auto.commit.interval.ms'      => '1000'
-                  }.freeze
+      DEFAULTS_HERMANN_OPTS = {
+        'zookeeper.session.timeout.ms' => '400',
+        'zookeeper.sync.time.ms'       => '200',
+        'auto.commit.interval.ms'      => '1000'
+      }.freeze
+
+      DEFAULT_CONSUMER_OPTIONS = {
+        :do_retry         => true,
+        :max_retries      => 3,
+        :backoff_time_sec => 1,
+        :logger           => nil
+      }.freeze
 
       # Instantiate JavaSimpleConsumer
       #
@@ -27,14 +34,20 @@ module Hermann
       # @params [String] Kafka topic
       #
       # @params [Hash] kafka options for consumer
-      # @option opts [Fixnum] :sleep_time Time to sleep between consume retries, defaults to 1sec
+      # @option opts [Fixnum]  :backoff_time_sec Time to sleep between consume retries, defaults to 1sec
       # @option opts [Boolean] :do_retry Retry consume attempts if exceptions are thrown, defaults to true
+      # @option opts [Fixnum]  :max_retries Number of max_retries to retry #consume when it throws an exception
+      # @option opts [Logger]  :logger Pass in a Logger
       def initialize(zookeepers, groupId, topic, opts={})
-        config       = create_config(zookeepers, groupId)
-        @consumer    = ConsumerUtil::Consumer.createJavaConsumerConnector(config)
-        @topic       = topic
-        @sleep_time  = opts.delete(:sleep_time) || 1
-        @do_retry    = opts.delete(:do_retry)   || true
+        config            = create_config(zookeepers, groupId)
+        @consumer         = ConsumerUtil::Consumer.createJavaConsumerConnector(config)
+        @topic            = topic
+
+        options           = DEFAULT_CONSUMER_OPTIONS.merge(opts)
+        @backoff_time_sec = options[:backoff_time_sec]
+        @do_retry         = options[:do_retry]
+        @max_retries      = options[:max_retries]
+        @logger           = options[:logger]
       end
 
       # Shuts down the various threads created by createMessageStreams
@@ -63,14 +76,13 @@ module Hermann
             message = it.next.message
             yield String.from_java_bytes(message)
           end
-        rescue Exception => e
-          puts "#{self.class.name}#consume exception: #{e.class.name}"
-          puts "Msg: #{e.message}"
-          puts e.backtrace.join("\n")
-          if retry?
-            sleep @sleep_time
+        rescue => e
+          if retry? && @max_retries > 0
+            sleep @backoff_time_sec
+            @max_retries -= 1
             retry
           else
+            log_exception(e)
             raise e
           end
         end
@@ -79,6 +91,13 @@ module Hermann
       private
         def retry?
           @do_retry
+        end
+
+        def log_exception(e)
+          return unless @logger
+          @logger.error("#{self.class.name}#consume exception: #{e.class.name}")
+          @logger.error("Msg: #{e.message}")
+          @logger.error(e.backtrace.join("\n"))
         end
 
         # Gets the message stream of the topic. Creates message streams for
@@ -106,7 +125,7 @@ module Hermann
         # @raises [RuntimeError] if options does not contain key value strings
         def create_config(zookeepers, groupId, opts={})
           config     = connect_opts(zookeepers, groupId)
-          options    = DEFAULTS.merge(config).merge(opts)
+          options    = DEFAULTS_HERMANN_OPTS.merge(config).merge(opts)
           properties = Hermann.package_properties(options)
           ConsumerUtil::ConsumerConfig.new(properties)
         end
