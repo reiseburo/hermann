@@ -1,6 +1,7 @@
 require 'hermann'
 require 'concurrent'
 require 'json'
+require 'hermann/errors'
 
 module Hermann
   module Provider
