@@ -4,8 +4,13 @@ gemspec
 
 group :development do
   gem 'rake'
+  gem' ruby-maven', :platform => :java
+  gem 'jar-dependencies', :platform => :java
   gem 'rake-compiler'
   gem 'pry'
+
+  # Used for testing `zk` gem based functionality
+  gem 'zk', '~> 1.9.4'
 end
 
 group :test do
