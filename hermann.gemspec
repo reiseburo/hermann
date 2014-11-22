@@ -8,10 +8,10 @@ Gem::Specification.new do |s|
   s.name               = "hermann"
   s.version            = Hermann::VERSION
 
-  s.authors = ['R. Tyler Croy', "Stan Campbell"]
+  s.authors = ['R. Tyler Croy', 'James Way', "Stan Campbell"]
   s.description = 'Ruby gem for talking to Kafka'
   s.summary = 'A Kafka consumer/producer gem supporting both MRI and JRuby'
-  s.email = ['rtyler.croy@lookout.com', 'stan.campbell3@gmail.com']
+  s.email = ['rtyler.croy@lookout.com', 'james.way@lookout.com', 'stan.campbell3@gmail.com']
   s.homepage = 'https://github.com/lookout/Hermann'
   s.licenses = ['MIT']
 
@@ -24,14 +24,13 @@ Gem::Specification.new do |s|
   s.specification_version = 3 if s.respond_to?(:specification_version)
 
   s.add_dependency 'concurrent-ruby', '~> 0.7.0'
-  s.add_dependency "zk", "~> 1.9.4"
   s.add_dependency 'thread_safe', '~> 0.3.4'
 
   if RUBY_PLATFORM == "java"
-    #IMPORTANT: make sure that jar-dependencies is only a development dependency of your gem. if it is a runtime dependencies the require_jars file will be overwritten during installation.
+    # IMPORTANT: make sure that jar-dependencies is only a development
+    # dependency of your gem. if it is a runtime dependencies the require_jars
+    # file will be overwritten during installation.
     s.add_dependency 'jar-dependencies', '~>0.1.2'
-    s.add_development_dependency 'ruby-maven', '~> 3.1.1.0'
-    s.add_development_dependency 'rake'
     s.requirements << "jar org.apache.kafka:kafka_2.10, 0.8.1.1"
     s.requirements << "jar org.mod4j.org.eclipse.xtext:log4j, 1.2.15"
     s.requirements << "jar org.scala-lang:scala-library, 2.10.1"

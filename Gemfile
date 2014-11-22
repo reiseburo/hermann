@@ -3,9 +3,15 @@ source "https://rubygems.org"
 gemspec
 
 group :development do
+  gem 'jbundler', :platform => :jruby
   gem 'rake'
+  gem 'ruby-maven', '~> 3.1.1.0', :platform => :jruby
+  gem 'jar-dependencies', :platform => :jruby
   gem 'rake-compiler'
   gem 'pry'
+
+  # Used for testing `zk` gem based functionality
+  gem 'zk', '~> 1.9.4'
 end
 
 group :test do

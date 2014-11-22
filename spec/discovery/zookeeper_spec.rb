@@ -10,45 +10,73 @@ describe Hermann::Discovery::Zookeeper do
   subject { described_class.new(zookeepers) }
 
   describe '#get_brokers' do
-    let(:broker_array) { ['f:1','a:2'] }
-    before do
-      allow(ZK).to receive(:open).with(any_args).and_yield(zk)
-      allow(subject).to receive(:fetch_brokers).with(any_args) { brokers }
+    let(:broker_array) do
+      [
+        JSON.dump({:host => 'f', :port => 1}),
+        JSON.dump({:host => 'g', :port => 2}),
+      ]
     end
+
+    before do
+      impl = double('ZK underlying impl')
+      allow(subject).to receive(:impl).and_return(impl)
+      expect(impl).to receive(:brokers).and_return(broker_array)
+    end
+
     context 'with valid brokers' do
-      let(:brokers) { broker_array }
       it 'gets valid string' do
-        expect(subject.get_brokers).to eq broker_array
+        expect(subject.get_brokers).to eq ['f:1', 'g:2']
       end
     end
+
     context 'with no brokers' do
-      let(:brokers) { [] }
+      let(:broker_array) { [] }
       it 'raises an error' do
         expect{ subject.get_brokers }.to raise_error(Hermann::Errors::NoBrokersError)
       end
     end
   end
 
-  describe '#fetch_brokers' do
-    let(:broker_ids) { [1] }
-    it 'fetches the formatted broker list' do
-      allow(zk).to receive(:children).with(any_args) { broker_ids }
-      allow(subject).to receive(:fetch_znode).with(any_args) { node }
-      expect(subject.send(:fetch_brokers, zk)).to eq ['f:1']
-    end
+  # Not implementing many tests here on purpose, the use of the Curator
+  # libraries are relatively straight-forward and adding unit tetss to the
+  # CuratorImpl doesn't seem worth the trouble of getting the curator libraries
+  # properly loaded into the RSpec runtime
+  describe Hermann::Discovery::Zookeeper::CuratorImpl do
+    subject { described_class }
+    it { should respond_to :usable? }
   end
 
-  describe '#fetch_znode' do
-    let(:id) { 1 }
-    let(:result) { ['foo'] }
-    it 'fetches the znode from zookeeper' do
-      allow(zk).to receive(:get).with(any_args) { result }
-      expect(subject.send(:fetch_znode, zk, id)).to eq result.first
+  describe Hermann::Discovery::Zookeeper::ZkGemImpl do
+    context 'class methods' do
+      subject { described_class }
+      it { should respond_to :usable? }
     end
 
-    it 'returns nil node not found' do
-      allow(zk).to receive(:get).and_raise(ZK::Exceptions::NoNode)
-      expect(subject.send(:fetch_znode, zk, id)).to be_nil
+    context 'instance methods' do
+      subject { described_class.new(zookeepers) }
+
+      describe '#brokers' do
+        let(:broker_ids) { [1] }
+        it 'fetches the formatted broker list' do
+          allow(zk).to receive(:children).with(any_args) { broker_ids }
+          allow(subject).to receive(:fetch_znode).with(any_args) { node }
+          expect(subject.send(:fetch_brokers, zk)).to be_instance_of Array
+        end
+      end
+
+      describe '#fetch_znode' do
+        let(:id) { 1 }
+        let(:result) { ['foo'] }
+        it 'fetches the znode from zookeeper' do
+          allow(zk).to receive(:get).with(any_args) { result }
+          expect(subject.send(:fetch_znode, zk, id)).to eq result.first
+        end
+
+        it 'returns nil node not found' do
+          allow(zk).to receive(:get).and_raise(ZK::Exceptions::NoNode)
+          expect(subject.send(:fetch_znode, zk, id)).to be_nil
+        end
+      end
     end
   end
 
