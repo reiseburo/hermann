@@ -3,9 +3,10 @@ source "https://rubygems.org"
 gemspec
 
 group :development do
+  gem 'jbundler', :platform => :jruby
   gem 'rake'
-  gem' ruby-maven', :platform => :java
-  gem 'jar-dependencies', :platform => :java
+  gem 'ruby-maven', '~> 3.1.1.0', :platform => :jruby
+  gem 'jar-dependencies', :platform => :jruby
   gem 'rake-compiler'
   gem 'pry'
 

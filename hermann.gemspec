@@ -8,10 +8,10 @@ Gem::Specification.new do |s|
   s.name               = "hermann"
   s.version            = Hermann::VERSION
 
-  s.authors = ['R. Tyler Croy', "Stan Campbell"]
+  s.authors = ['R. Tyler Croy', 'James Way', "Stan Campbell"]
   s.description = 'Ruby gem for talking to Kafka'
   s.summary = 'A Kafka consumer/producer gem supporting both MRI and JRuby'
-  s.email = ['rtyler.croy@lookout.com', 'stan.campbell3@gmail.com']
+  s.email = ['rtyler.croy@lookout.com', 'james.way@lookout.com', 'stan.campbell3@gmail.com']
   s.homepage = 'https://github.com/lookout/Hermann'
   s.licenses = ['MIT']
 
