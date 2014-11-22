@@ -20,7 +20,7 @@ describe Hermann::Discovery::Zookeeper do
     before do
       impl = double('ZK underlying impl')
       allow(subject).to receive(:impl).and_return(impl)
-      expect(impl).to receive(:each_broker).and_return(broker_array)
+      expect(impl).to receive(:brokers).and_return(broker_array)
     end
 
     context 'with valid brokers' do
@@ -55,7 +55,7 @@ describe Hermann::Discovery::Zookeeper do
     context 'instance methods' do
       subject { described_class.new(zookeepers) }
 
-      describe '#each_broker' do
+      describe '#brokers' do
         let(:broker_ids) { [1] }
         it 'fetches the formatted broker list' do
           allow(zk).to receive(:children).with(any_args) { broker_ids }
