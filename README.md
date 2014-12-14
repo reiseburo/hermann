@@ -22,8 +22,6 @@ straightforward.
 
 - Kafka 0.8 is supported.
 - Ruby 1.9.3, 2.1.1 and JRuby are tested against
-- This is an early alpha version of the gem, so expect bumps in the
-  road.
 
 
 ### Producer
