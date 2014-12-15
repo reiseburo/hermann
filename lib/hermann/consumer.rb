@@ -23,7 +23,7 @@ module Hermann
     #
     # @params [Hash] options for Consumer
     # @option opts [String] :brokers   (for MRI) Comma separated list of brokers
-    # @option opts [String] :partition (for MRI) The kafka partition
+    # @option opts [Integer] :partition (for MRI) The kafka partition
     def initialize(topic, groupId, zookeepers, opts={})
       @topic = topic
       @brokers = brokers
