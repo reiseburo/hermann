@@ -4,7 +4,7 @@ require 'hermann/errors'
 
 describe Hermann::Discovery::Zookeeper do
   let(:zk) { double }
-  let(:zookeepers) { double }
+  let(:zookeepers) { 'zk:2181' }
   let(:node) { {'host'=>'f', 'port'=>1 }.to_json }
 
   subject { described_class.new(zookeepers) }
@@ -73,6 +73,7 @@ describe Hermann::Discovery::Zookeeper do
         end
 
         it 'returns nil node not found' do
+          expect(described_class.usable?).to be(true)
           allow(zk).to receive(:get).and_raise(ZK::Exceptions::NoNode)
           expect(subject.send(:fetch_znode, zk, id)).to be_nil
         end
