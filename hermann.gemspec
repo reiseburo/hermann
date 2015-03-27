@@ -28,10 +28,11 @@ Gem::Specification.new do |s|
 
   if RUBY_PLATFORM == "java"
     # IMPORTANT: make sure that jar-dependencies is only a development
-    # dependency of your gem. if it is a runtime dependencies the require_jars
-    # file will be overwritten during installation.
-    s.add_dependency 'jar-dependencies', '~>0.1.2'
-    s.requirements << "jar org.apache.kafka:kafka_2.10, ~>0.8.1.1"
+    # dependency of your gem. then all jars will be vendored inside the
+    # gem during installation.
+    s.add_dependency 'jar-dependencies', '~>0.1.9'
+    # exclude junit:junit
+    s.requirements << "jar org.apache.kafka:kafka_2.10, ~>0.8.1.1, ['junit:junit']"
     s.requirements << "jar org.apache.curator:curator-framework, ~>2.7"
     s.requirements << "jar log4j:log4j, ~>1.2"
     s.require_paths = ["lib"]
