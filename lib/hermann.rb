@@ -31,5 +31,5 @@ module Hermann
 end
 
 if Hermann.jruby?
- require 'hermann/java'
+  require 'hermann/java'
 end
