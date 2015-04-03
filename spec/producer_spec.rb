@@ -38,9 +38,17 @@ describe Hermann::Producer do
   describe '#push' do
     let(:msg)   { 'foo' }
     let(:passed_topic) { 'bar' }
+    let(:partition_key) { 'syncml_shard_68_master' }
+
     context 'without topic passed' do
       it 'uses initialized topic' do
         expect(producer.internal).to receive(:push_single).with(msg, topic, anything)
+        producer.push(msg)
+      end
+    end
+    context 'without topic passed', :platform => :java do
+      it 'uses initialized topic and does not have a partition key' do
+        expect(producer.internal).to receive(:push_single).with(msg, topic, nil)
         producer.push(msg)
       end
     end
@@ -56,6 +64,13 @@ describe Hermann::Producer do
           expect(producer.internal).to receive(:push_single).with(msg, passed_topic, anything).exactly(messages.size).times
           producer.push(messages, :topic => passed_topic)
         end
+      end
+    end
+
+    context 'with explicit partition key', :platform => :java do
+      it 'uses the partition key' do
+        expect(producer.internal).to receive(:push_single).with(msg, topic, partition_key.to_java)
+        producer.push(msg, :partition_key => partition_key)
       end
     end
 

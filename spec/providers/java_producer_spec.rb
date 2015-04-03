@@ -8,9 +8,11 @@ describe Hermann::Provider::JavaProducer, :platform => :java  do
   let(:topic)      { 'rspec' }
   let(:brokers)    { '0:1337'}
   let(:opts)       { {} }
+  let(:part_key)   { "key".to_java }
+  let(:msg)        { "bar" }
 
   describe '#push_single' do
-    subject(:result) { producer.push_single('foo', topic, nil) }
+    subject(:result) { producer.push_single(msg, topic, nil) }
 
     let(:passed_topic) { 'foo' }
 
@@ -19,8 +21,13 @@ describe Hermann::Provider::JavaProducer, :platform => :java  do
     end
 
     it 'can change topic' do
-      expect(Hermann::ProducerUtil::KeyedMessage).to receive(:new).with(passed_topic, anything)
-      producer.push_single('bar', passed_topic, nil).wait(1)
+      expect(Hermann::ProducerUtil::KeyedMessage).to receive(:new).with(passed_topic, nil, nil, anything)
+      producer.push_single(msg, passed_topic, nil).wait(1)
+    end
+
+    it 'can change partition key' do
+      expect(Hermann::ProducerUtil::KeyedMessage).to receive(:new).with(passed_topic, nil, part_key, anything)
+      producer.push_single(msg, passed_topic, part_key).wait(1)
     end
 
     context 'error conditions' do

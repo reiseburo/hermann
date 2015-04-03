@@ -50,6 +50,7 @@ module Hermann
     # @param [Object] value A single object to push
     # @param [Hash] opts to pass to push method
     # @option opts [String] :topic The topic to push messages to
+    #                       :partition_key The string to partition by
     #
     # @return [Hermann::Result] A future-like object which will store the
     #   result from the broker
@@ -62,7 +63,8 @@ module Hermann
       end
 
       if Hermann.jruby?
-        result = @internal.push_single(value, topic, nil)
+        key = opts.has_key?(:partition_key) ? opts[:partition_key].to_java : nil
+        result = @internal.push_single(value, topic, key)
         unless result.nil?
           @children << result
         end
