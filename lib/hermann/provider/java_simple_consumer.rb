@@ -15,7 +15,7 @@ module Hermann
       DEFAULTS_HERMANN_OPTS = {
         'zookeeper.session.timeout.ms' => '400',
         'zookeeper.sync.time.ms'       => '200',
-        'auto.commit.interval.ms'      => '1000',
+        'auto.commit.interval.ms'      => '1000'
       }.freeze
 
       DEFAULT_CONSUMER_OPTIONS = {
