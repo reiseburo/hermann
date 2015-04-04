@@ -15,7 +15,7 @@ module Hermann
       DEFAULTS_HERMANN_OPTS = {
         'zookeeper.session.timeout.ms' => '400',
         'zookeeper.sync.time.ms'       => '200',
-        'auto.commit.interval.ms'      => '1000'
+        'auto.commit.interval.ms'      => '1000',
       }.freeze
 
       DEFAULT_CONSUMER_OPTIONS = {
@@ -38,16 +38,18 @@ module Hermann
       # @option opts [Boolean] :do_retry Retry consume attempts if exceptions are thrown, defaults to true
       # @option opts [Fixnum]  :max_retries Number of max_retries to retry #consume when it throws an exception
       # @option opts [Logger]  :logger Pass in a Logger
+      # @option opts [Other]   other opts from kafka
       def initialize(zookeepers, groupId, topic, opts={})
-        config            = create_config(zookeepers, groupId)
-        @consumer         = ConsumerUtil::Consumer.createJavaConsumerConnector(config)
         @topic            = topic
-
         options           = DEFAULT_CONSUMER_OPTIONS.merge(opts)
-        @backoff_time_sec = options[:backoff_time_sec]
-        @do_retry         = options[:do_retry]
-        @max_retries      = options[:max_retries]
-        @logger           = options[:logger]
+        @backoff_time_sec = options.delete(:backoff_time_sec)
+        @do_retry         = options.delete(:do_retry)
+        @max_retries      = options.delete(:max_retries)
+        @logger           = options.delete(:logger)
+        # deleting options above so that they do not get sent to
+        # the create_config method
+        config            = create_config(zookeepers, groupId, options)
+        @consumer         = ConsumerUtil::Consumer.createJavaConsumerConnector(config)
       end
 
       # Shuts down the various threads created by createMessageStreams
