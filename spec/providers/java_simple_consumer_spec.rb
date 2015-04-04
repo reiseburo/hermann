@@ -3,13 +3,14 @@ require 'hermann/provider/java_simple_consumer'
 require 'hermann/errors'
 
 describe Hermann::Provider::JavaSimpleConsumer, :platform => :java  do
-  subject(:consumer) { described_class.new(zookeeper, groupId, topic, {:logger => logger}) }
-
   let(:zookeeper)         { 'localhost:2181' }
   let(:groupId)           { 'groupId' }
   let(:topic)             { 'topic' }
   let(:internal_consumer) { double('ConsumerUtil::Consumer') }
   let(:logger)            { double('logger') }
+  let(:opts)              { {'foo.bar' => 1 } }
+
+  subject(:consumer) { described_class.new(zookeeper, groupId, topic, {:logger => logger}) }
 
   before do
     allow(Hermann::ConsumerUtil::Consumer).to receive(:createJavaConsumerConnector).with(any_args) { internal_consumer }
@@ -71,10 +72,11 @@ describe Hermann::Provider::JavaSimpleConsumer, :platform => :java  do
   end
 
   describe '#create_config' do
-    subject { consumer.send(:create_config, zookeeper, groupId) }
+    subject { consumer.send(:create_config, zookeeper, groupId, opts) }
 
     it 'creates the consumer config' do
       expect(subject).to be_a Hermann::ConsumerUtil::ConsumerConfig
+      expect(subject.props.to_s).to match "foo.bar"
     end
   end
 
