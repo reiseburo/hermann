@@ -44,9 +44,9 @@ module Hermann
       # @return +Concurrent::Promise+ Representa a promise to send the
       #   data to the kafka broker.  Upon execution the Promise's status
       #   will be set
-      def push_single(msg, topic, unused)
+      def push_single(msg, topic, key)
         Concurrent::Promise.execute {
-          data = ProducerUtil::KeyedMessage.new(topic, msg.to_java_bytes)
+          data = ProducerUtil::KeyedMessage.new(topic, nil, key, msg.to_java_bytes)
           begin
             @producer.send(data)
           rescue Java::KafkaCommon::FailedToSendMessageException => jexc
