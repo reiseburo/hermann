@@ -7,6 +7,7 @@ require 'hermann/version'
 Gem::Specification.new do |s|
   s.name               = "hermann"
   s.version            = Hermann::VERSION
+  s.version            = [Hermann::VERSION, ENV['TRAVIS_BUILD_NUMBER'] || 'dev'].join('.')
 
   s.authors = ['R. Tyler Croy', 'James Way', "Stan Campbell"]
   s.description = 'Ruby gem for talking to Kafka'
