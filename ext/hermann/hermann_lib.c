@@ -204,22 +204,16 @@ static void hexdump(FILE *fp,
  * @param rkmessage	rd_kafka_message_t* the message
  * @param opaque	   void*   opaque context
  */
-static void msg_consume(rd_kafka_message_t *rkmessage,
-						void *opaque) {
-
-	HermannInstanceConfig* cfg;
-
-	cfg = (HermannInstanceConfig*)opaque;
-
+static void msg_consume(rd_kafka_message_t *rkmessage, HermannInstanceConfig *cfg) {
 	if (rkmessage->err) {
 		if (rkmessage->err == RD_KAFKA_RESP_ERR__PARTITION_EOF) {
-			fprintf(stderr,
-				"%% Consumer reached end of %s [%"PRId32"] "
-				   "message queue at offset %"PRId64"\n",
-				   rd_kafka_topic_name(rkmessage->rkt),
-				   rkmessage->partition, rkmessage->offset);
-
 			if (cfg->exit_eof) {
+				fprintf(stderr,
+						"%% Consumer reached end of %s [%"PRId32"] "
+						"message queue at offset %"PRId64"\n",
+						rd_kafka_topic_name(rkmessage->rkt),
+						rkmessage->partition, rkmessage->offset);
+
 				cfg->run = 0;
 			}
 
@@ -341,7 +335,7 @@ void consumer_init_kafka(HermannInstanceConfig* config) {
 
 // Ruby gem extensions
 
-#ifdef RB_THREAD_BLOCKING_REGION
+#if defined(RB_THREAD_BLOCKING_REGION) || defined(HAVE_RB_THREAD_CALL_WITHOUT_GVL)
 /* NOTE: We only need this method defined if RB_THREAD_BLOCKING_REGION is
  * defined, otherwise it's unused
  */
@@ -359,22 +353,48 @@ static void consumer_consume_stop_callback(void *ptr) {
 }
 #endif
 
+void *consumer_recv_msg(void *ptr)
+{
+	rd_kafka_message_t *ret;
+	HermannInstanceConfig *consumerConfig = (HermannInstanceConfig *) ptr;
+
+	ret = rd_kafka_consume(consumerConfig->rkt, consumerConfig->partition, 100);
+
+	if ( ret == NULL ) {
+		if ( errno != ETIMEDOUT )
+			fprintf(stderr, "%% Error: %s\n", rd_kafka_err2str( rd_kafka_errno2err(errno)));
+	}
+
+	return (void *) ret;
+}
+
 /**
  * Loop on a timeout to receive messages from Kafka.  When the consumer_consume_stop_callback is invoked by Ruby,
  * we'll break out of our loop and return.
  */
 void consumer_consume_loop(HermannInstanceConfig* consumerConfig) {
-
+	rd_kafka_message_t *msg;
 	TRACER("\n");
 
 	while (consumerConfig->run) {
-		if (rd_kafka_consume_callback(consumerConfig->rkt, consumerConfig->partition,
-										  1000/*timeout*/,
-										  msg_consume,
-										  consumerConfig) < 0) {
-			fprintf(stderr, "%% Error: %s\n", rd_kafka_err2str( rd_kafka_errno2err(errno)));
-		}
+#ifdef RB_THREAD_BLOCKING_REGION
+		msg = rb_thread_blocking_region(consumer_recv_msg,
+				consumerConfig,
+				consumer_consume_stop_callback,
+				consumerConfig);
+#elif HAVE_RB_THREAD_CALL_WITHOUT_GVL
+		msg = rb_thread_call_without_gvl(consumer_recv_msg,
+				consumerConfig,
+				consumer_consume_stop_callback,
+				consumerConfig);
+#else
+		msg = consumer_recv_msg(consumerConfig);
+#endif
 
+		if ( msg ) {
+			msg_consume(msg, consumerConfig);
+			rd_kafka_message_destroy(msg);
+		}
 	}
 }
 
@@ -412,23 +432,7 @@ static VALUE consumer_consume(VALUE self, VALUE topic) {
 		return Qnil;
 	}
 
-#ifdef RB_THREAD_BLOCKING_REGION
-	/** The consumer will listen for incoming messages in a loop, timing out and checking the consumerConfig->run
-	 *  flag every second.
-	 *
-	 *  Call rb_thread_blocking_region to release the GVM lock and allow Ruby to amuse itself while we wait on
-	 *  IO from Kafka.
-	 *
-	 *  If Ruby needs to interrupt the consumer loop, the stop callback will be invoked and the loop should exit.
-	 */
-	rb_thread_blocking_region(consumer_consume_loop,
-							  consumerConfig,
-							  consumer_consume_stop_callback,
-							  consumerConfig);
-#else
-	consumer_consume_loop(consumerConfig);
-#endif
-
+  consumer_consume_loop(consumerConfig);
 
 	/* Stop consuming */
 	rd_kafka_consume_stop(consumerConfig->rkt, consumerConfig->partition);
@@ -669,7 +673,7 @@ static VALUE producer_connect(VALUE self, VALUE timeout) {
 								   &data,
 								   timeout_ms);
 	TRACER("err: %s (%i)\n", rd_kafka_err2str(err), err);
-	
+
 	if (RD_KAFKA_RESP_ERR_NO_ERROR == err) {
 		TRACER("brokers: %i, topics: %i\n",
 				data->broker_cnt,

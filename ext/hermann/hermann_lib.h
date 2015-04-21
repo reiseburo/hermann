@@ -31,6 +31,7 @@
 #define HERMANN_H
 
 #include <ruby.h>
+#include <ruby/thread.h>
 
 #include <ctype.h>
 #include <signal.h>

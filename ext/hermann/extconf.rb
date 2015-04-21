@@ -146,4 +146,6 @@ dir_config('rdkafka', HEADER_DIRS, LIB_DIRS)
 #   <http://blog.zachallett.com/howto-ruby-c-extension-with-a-static-library>
 $LOCAL_LIBS << File.join(librdkafka.path, 'lib', 'librdkafka.a')
 
+have_func('rb_thread_call_without_gvl')
+
 create_makefile('hermann/hermann_lib')
