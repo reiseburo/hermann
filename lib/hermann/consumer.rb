@@ -52,7 +52,7 @@ module Hermann
     def require_values_at(opts, *args)
       args.map do |a|
         raise "Please provide :#{a} option!" unless opts[a]
-        opts[a]
+        opts.delete(a)
       end
     end
   end
