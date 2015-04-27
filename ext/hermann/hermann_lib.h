@@ -31,7 +31,10 @@
 #define HERMANN_H
 
 #include <ruby.h>
+
+#ifdef HAVE_RUBY_THREAD_H
 #include <ruby/thread.h>
+#endif
 
 #include <ctype.h>
 #include <signal.h>
