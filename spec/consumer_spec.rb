@@ -4,7 +4,7 @@ require 'hermann/consumer'
 # XXX: Hermann::Consumer isn't really supported anywhere, MRI included right
 # now
 describe Hermann::Consumer do
-  subject(:consumer) { described_class.new(topic, nil, nil, opts) }
+  subject(:consumer) { described_class.new(topic, opts) }
 
   let(:topic) { 'rspec' }
   let(:brokers) { 'localhost:1337' }
@@ -46,7 +46,7 @@ describe Hermann::Consumer do
   end
 
   context 'on Jruby', :platform => :java do
-    subject(:consumer) { described_class.new(topic, groupId, zookeepers) }
+    subject(:consumer) { described_class.new(topic, group_id: groupId, zookeepers: zookeepers) }
 
     let(:zookeepers) { 'localhost:2181' }
     let(:groupId)    { 'groupId' }
