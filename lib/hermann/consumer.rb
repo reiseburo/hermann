@@ -18,8 +18,9 @@ module Hermann
     #
     # @params [String] kafka topic
     # @params [Hash] options for Consumer
-    # @option opts [String]  :brokers    (for MRI) Comma separated list of brokers
-    # @option opts [Integer] :partition  (for MRI) The kafka partition
+    # @option opts [String]        :brokers    (for MRI) Comma separated list of brokers
+    # @option opts [Integer]       :partition  (for MRI) The kafka partition
+    # @option opts [Symbol|Fixnum] :offset     (for MRI) Starting consumer offset.  either :start, :end, or Fixnum
     # @option opts [Integer] :zookeepers (for jruby) list of zookeeper servers
     # @option opts [Integer] :group_id   (for jruby) client group_id
     #
