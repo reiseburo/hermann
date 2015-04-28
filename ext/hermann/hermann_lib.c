@@ -33,6 +33,11 @@
 
 #include "hermann_lib.h"
 
+
+/* how long to let librdkafka block on the socket before returning back to the interpreter.
+ * essentially defines how long we wait before consumer_consume_stop_callback() can fire */
+#define CONSUMER_RECVMSG_TIMEOUT_MS 100
+
 /**
  * Convenience function
  *
@@ -358,7 +363,7 @@ void *consumer_recv_msg(void *ptr)
 	rd_kafka_message_t *ret;
 	HermannInstanceConfig *consumerConfig = (HermannInstanceConfig *) ptr;
 
-	ret = rd_kafka_consume(consumerConfig->rkt, consumerConfig->partition, 100);
+	ret = rd_kafka_consume(consumerConfig->rkt, consumerConfig->partition, CONSUMER_RECVMSG_TIMEOUT_MS);
 
 	if ( ret == NULL ) {
 		if ( errno != ETIMEDOUT )
