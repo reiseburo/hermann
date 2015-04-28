@@ -321,9 +321,6 @@ void consumer_init_kafka(HermannInstanceConfig* config) {
 	rd_kafka_set_logger(config->rk, logger);
 	rd_kafka_set_log_level(config->rk, LOG_DEBUG);
 
-	/* TODO: offset calculation */
-	config->start_offset = RD_KAFKA_OFFSET_END;
-
 	/* Add brokers */
 	if (rd_kafka_brokers_add(config->rk, config->brokers) == 0) {
 		fprintf(stderr, "%% No valid brokers specified\n");
@@ -820,11 +817,13 @@ static VALUE consumer_allocate(VALUE klass) {
  *  @param  topic	   VALUE   a Ruby string
  *  @param  brokers	 VALUE   a Ruby string containing list of host:port
  *  @param  partition   VALUE   a Ruby number
+ *  @param  offset      VALUE   a Ruby number
  */
 static VALUE consumer_initialize(VALUE self,
 								 VALUE topic,
 								 VALUE brokers,
-								 VALUE partition) {
+								 VALUE partition,
+								 VALUE offset) {
 
 	HermannInstanceConfig* consumerConfig;
 	char* topicPtr;
@@ -844,6 +843,17 @@ static VALUE consumer_initialize(VALUE self,
 	consumerConfig->run = 1;
 	consumerConfig->exit_eof = 0;
 	consumerConfig->quiet = 0;
+
+	if ( FIXNUM_P(offset) ) {
+		consumerConfig->start_offset = FIX2LONG(offset);
+	} else if ( SYMBOL_P(offset) ) {
+		if ( offset == ID2SYM(rb_intern("start")) )
+			consumerConfig->start_offset = RD_KAFKA_OFFSET_BEGINNING;
+		else if ( offset == ID2SYM(rb_intern("end")) )
+			consumerConfig->start_offset = RD_KAFKA_OFFSET_END;
+	} else {
+		consumerConfig->start_offset = RD_KAFKA_OFFSET_END;
+	}
 
 	return self;
 }
@@ -1033,7 +1043,7 @@ void Init_hermann_lib() {
 	rb_define_alloc_func(c_consumer, consumer_allocate);
 
 	/* Initialize */
-	rb_define_method(c_consumer, "initialize", consumer_initialize, 3);
+	rb_define_method(c_consumer, "initialize", consumer_initialize, 4);
 	rb_define_method(c_consumer, "initialize_copy", consumer_init_copy, 1);
 
 	/* Consumer has method 'consume' */

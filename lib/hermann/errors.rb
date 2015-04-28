@@ -24,6 +24,9 @@ module Hermann
 
     # cannot discover brokers from zookeeper
     class NoBrokersError < GeneralError; end
+
+    # offsets can only be two symbols or a fixnum
+    class InvalidOffsetError < GeneralError; end
   end
 end
 
