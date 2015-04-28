@@ -358,7 +358,17 @@ static void consumer_consume_stop_callback(void *ptr) {
 }
 #endif
 
-void *consumer_recv_msg(void *ptr)
+/**
+ * consumer_recv_msg
+ *
+ * Consume a single message from the kafka stream.  The only function that should be invoked
+ * without the GVL held.
+ *
+ * @param   HermannInstanceConfig* The hermann configuration for this consumer
+ *
+ */
+
+static void *consumer_recv_msg(void *ptr)
 {
 	rd_kafka_message_t *ret;
 	HermannInstanceConfig *consumerConfig = (HermannInstanceConfig *) ptr;
@@ -374,10 +384,17 @@ void *consumer_recv_msg(void *ptr)
 }
 
 /**
- * Loop on a timeout to receive messages from Kafka.  When the consumer_consume_stop_callback is invoked by Ruby,
- * we'll break out of our loop and return.
+ * consumer_consume_loop
+ *
+ * A timeout-interrupted loop in which we drop the GVL and attemptto receive
+ * messages from Kafka.  We'll check every  CONSUMER_RECVMSG_TIMEOUT_MS, or
+ * after every message, to see if the ruby interpreter wants us to exit the
+ * loop.
+ *
+ * @param   HermannInstanceConfig* The hermann configuration for this consumer
  */
-void consumer_consume_loop(HermannInstanceConfig* consumerConfig) {
+
+static void consumer_consume_loop(HermannInstanceConfig* consumerConfig) {
 	rd_kafka_message_t *msg;
 	TRACER("\n");
 
