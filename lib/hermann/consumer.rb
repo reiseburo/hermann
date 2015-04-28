@@ -1,4 +1,5 @@
 require 'hermann'
+require 'hermann/errors'
 
 if Hermann.jruby?
   require 'hermann/provider/java_simple_consumer'
@@ -26,7 +27,7 @@ module Hermann
       @topic = topic
 
       offset = opts.delete(:offset)
-      raise "Bad offset: #{offset}" unless valid_offset?(offset)
+      raise Hermann::Errors::InvalidOffsetError.new("Bad offset: #{offset}") unless valid_offset?(offset)
 
       if Hermann.jruby?
         zookeepers, group_id = require_values_at(opts, :zookeepers, :group_id)
