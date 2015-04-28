@@ -24,6 +24,10 @@ module Hermann
     #
     def initialize(topic, opts = {})
       @topic = topic
+
+      offset = opts.delete(:offset)
+      raise "Bad offset: #{offset}" unless valid_offset?(offset)
+
       if Hermann.jruby?
         zookeepers, group_id = require_values_at(opts, :zookeepers, :group_id)
 
@@ -31,7 +35,7 @@ module Hermann
       else
         brokers, partition = require_values_at(opts, :brokers, :partition)
 
-        @internal = Hermann::Lib::Consumer.new(topic, brokers, partition)
+        @internal = Hermann::Lib::Consumer.new(topic, brokers, partition, offset)
       end
     end
 
@@ -47,6 +51,12 @@ module Hermann
       else
         #no op
       end
+    end
+
+    private
+
+    def valid_offset?(offset)
+      offset.nil? || offset.is_a?(Fixnum) || offset == :start || offset == :end
     end
 
     def require_values_at(opts, *args)

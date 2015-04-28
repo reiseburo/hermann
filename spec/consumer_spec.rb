@@ -9,7 +9,8 @@ describe Hermann::Consumer do
   let(:topic) { 'rspec' }
   let(:brokers) { 'localhost:1337' }
   let(:partition)  { 1 }
-  let(:opts) { { :brokers => brokers, :partition => partition } }
+  let(:offset) { nil }
+  let(:opts) { { :brokers => brokers, :partition => partition, :offset => offset } }
 
 
   context "on C ruby", :platform => :mri do
@@ -34,6 +35,11 @@ describe Hermann::Consumer do
 
       context 'with a bad topic' do
         let(:topic) { '' }
+        it_behaves_like 'an error condition'
+      end
+
+      context 'with a bad offset' do
+        let(:offset) { :foo }
         it_behaves_like 'an error condition'
       end
     end
