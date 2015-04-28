@@ -1,5 +1,6 @@
 require 'spec_helper'
 require 'hermann/consumer'
+require 'hermann/errors'
 
 # XXX: Hermann::Consumer isn't really supported anywhere, MRI included right
 # now
@@ -40,7 +41,9 @@ describe Hermann::Consumer do
 
       context 'with a bad offset' do
         let(:offset) { :foo }
-        it_behaves_like 'an error condition'
+        it "raises an InvalidOffset error" do
+          expect { subject }.to raise_error(Hermann::Errors::InvalidOffsetError)
+        end
       end
     end
 
