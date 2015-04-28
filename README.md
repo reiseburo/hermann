@@ -1,6 +1,6 @@
 # Hermann
 
-[![Gitter chat](https://badges.gitter.im/lookout/Hermann.png)](https://gitter.im/lookout/Hermann) [![Build Status](https://travis-ci.org/lookout/Hermann.svg?branch=master)](https://travis-ci.org/lookout/Hermann)
+[![Gitter chat](https://badges.gitter.im/lookout/Hermann.png)](https://gitter.im/lookout/Hermann) [![Build Status](https://travis-ci.org/lookout/Hermann.svg?branch=master)](https://travis-ci.org/lookout/hermann)
 
 A Ruby gem implementing a Kafka Publisher and Consumer
 
