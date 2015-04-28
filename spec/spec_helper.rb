@@ -13,7 +13,7 @@ RSpec.configure do |c|
   c.formatter = :documentation
 
   shared_context 'integration test context', :type => :integration do
-    let(:topic) { $integrationconf['kafka']['topic'] }
+    let(:topic) { "hermann_testing_" + rand(100_000_000).to_s }
     let(:brokers) { $integrationconf['kafka']['brokers'] }
     let(:zookeepers) { $integrationconf['zookeepers'] }
   end
