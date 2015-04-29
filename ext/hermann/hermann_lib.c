@@ -762,6 +762,9 @@ static void consumer_free(void *p) {
 		rd_kafka_destroy(config->rk);
 	}
 
+	free(config->topic);
+	free(config->brokers);
+
 	// clean up the struct
 	free(config);
 }
@@ -837,8 +840,8 @@ static VALUE consumer_initialize(VALUE self,
 	partitionNo = FIX2INT(partition);
 	Data_Get_Struct(self, HermannInstanceConfig, consumerConfig);
 
-	consumerConfig->topic = topicPtr;
-	consumerConfig->brokers = brokersPtr;
+	consumerConfig->topic = strdup(topicPtr);
+	consumerConfig->brokers = strdup(brokersPtr);
 	consumerConfig->partition = partitionNo;
 	consumerConfig->run = 1;
 	consumerConfig->exit_eof = 0;
