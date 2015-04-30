@@ -36,6 +36,10 @@
 #include <ruby/thread.h>
 #endif
 
+#ifdef HAVE_RUBY_INTERN_H
+#include <ruby/intern.h>
+#endif
+
 #include <ctype.h>
 #include <signal.h>
 #include <string.h>

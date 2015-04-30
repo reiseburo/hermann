@@ -337,7 +337,7 @@ void consumer_init_kafka(HermannInstanceConfig* config) {
 
 // Ruby gem extensions
 
-#if defined(RB_THREAD_BLOCKING_REGION) || defined(HAVE_RB_THREAD_CALL_WITHOUT_GVL)
+#if defined(HAVE_RB_THREAD_BLOCKING_REGION) || defined(HAVE_RB_THREAD_CALL_WITHOUT_GVL)
 /* NOTE: We only need this method defined if RB_THREAD_BLOCKING_REGION is
  * defined, otherwise it's unused
  */
@@ -396,8 +396,8 @@ static void consumer_consume_loop(HermannInstanceConfig* consumerConfig) {
 	TRACER("\n");
 
 	while (consumerConfig->run) {
-#ifdef RB_THREAD_BLOCKING_REGION
-		msg = rb_thread_blocking_region(consumer_recv_msg,
+#ifdef HAVE_RB_THREAD_BLOCKING_REGION
+		msg = (rd_kafka_message_t *) rb_thread_blocking_region((rb_blocking_function_t *) consumer_recv_msg,
 				consumerConfig,
 				consumer_consume_stop_callback,
 				consumerConfig);
