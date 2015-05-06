@@ -1,7 +1,10 @@
 require 'hermann'
-require 'concurrent'
 require 'json'
 require 'hermann/errors'
+
+if Hermann.jruby?
+  require 'concurrent'
+end
 
 module Hermann
   module Provider

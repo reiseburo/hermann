@@ -3,7 +3,10 @@ require 'spec_helper'
 require 'hermann/producer'
 require 'hermann/consumer'
 require 'hermann/discovery/zookeeper'
-require 'concurrent'
+
+if Hermann.jruby?
+  require 'concurrent'
+end
 
 require 'protobuf'
 require_relative '../fixtures/testevent.pb'
@@ -14,7 +17,7 @@ describe 'producer' do
   let(:timeout) { 10 }
   let(:message)   { 'msg' }
   let(:consumer) do
-    Hermann::Consumer.new(topic, "rspec-group", zookeepers)
+    Hermann::Consumer.new(topic, {:group_id => "rspec-group", :zookeepers => zookeepers})
   end
   let(:consumer_promise) do
     Concurrent::Promise.execute do
