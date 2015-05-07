@@ -6,7 +6,8 @@ require 'hermann/discovery/zookeeper'
 
 require 'protobuf'
 
-require 'spec/fixtures/testevent.pb'
+$LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__) + '/../'))
+require 'fixtures/testevent.pb'
 
 describe 'producer', :platform => :java  do
   include_context 'integration test context'
