@@ -24,14 +24,13 @@ Gem::Specification.new do |s|
   s.rubygems_version = '2.2.2'
   s.specification_version = 3 if s.respond_to?(:specification_version)
 
-  s.add_dependency 'concurrent-ruby', '~> 0.7.0'
-  s.add_dependency 'thread_safe', '~> 0.3.4'
-
   if RUBY_PLATFORM == "java"
     # IMPORTANT: make sure that jar-dependencies is only a development
     # dependency of your gem. if it is a runtime dependencies the require_jars
     # file will be overwritten during installation.
     s.add_dependency 'jar-dependencies', '~>0.1.9'
+    s.add_dependency 'concurrent-ruby', '~> 0.7.0'
+    s.add_dependency 'thread_safe', '~> 0.3.4'
     s.requirements << "jar org.apache.kafka:kafka_2.10, ~>0.8.1.1, ['junit:junit']"
     # use log4j-1.2.16+ to as 1.2.15 declares deps which are not in maven central and causes the dep resolution to fail
     s.requirements << "jar log4j:log4j, ~>1.2.16"
