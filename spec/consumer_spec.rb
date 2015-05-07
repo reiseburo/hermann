@@ -55,7 +55,7 @@ describe Hermann::Consumer do
   end
 
   context 'on Jruby', :platform => :java do
-    subject(:consumer) { described_class.new(topic, group_id: groupId, zookeepers: zookeepers) }
+    subject(:consumer) { described_class.new(topic, :group_id => groupId, :zookeepers => zookeepers) }
 
     let(:zookeepers) { 'localhost:2181' }
     let(:groupId)    { 'groupId' }

@@ -3,12 +3,12 @@ require 'spec_helper'
 require 'hermann/producer'
 require 'hermann/consumer'
 require 'hermann/discovery/zookeeper'
-require 'concurrent'
 
 require 'protobuf'
-require_relative '../fixtures/testevent.pb'
 
-describe 'producer' do
+require 'spec/fixtures/testevent.pb'
+
+describe 'producer', :platform => :java  do
   include_context 'integration test context'
 
   let(:timeout) { 10 }

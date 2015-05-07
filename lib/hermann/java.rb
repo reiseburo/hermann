@@ -1,6 +1,7 @@
 module Hermann
   require 'java'
   require 'hermann_jars'
+  require 'concurrent'
 
   module JavaUtil
     include_package 'java.util'
