@@ -3,5 +3,6 @@ require 'hermann'
 require 'hermann/discovery/metadata'
 
 c = Hermann::Discovery::Metadata.new( "localhost:9092" )
-puts c.get_topics("maxwell").inspect
+c.topic("maxwell")
+puts c.topic("maxwell").inspect
 
