@@ -14,7 +14,7 @@ RSpec.configure do |c|
 
   shared_context 'integration test context', :type => :integration do
     let(:topic) { "hermann_testing_" + rand(100_000_000).to_s }
-    let(:brokers) { $integrationconf['kafka']['brokers'] }
+    let(:brokers) { $integrationconf['kafka']['brokers'].join(',') }
     let(:zookeepers) { $integrationconf['zookeepers'] }
   end
 end

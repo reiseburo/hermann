@@ -26,7 +26,7 @@ straightforward.
 
 ### Producer
 
-#### Zookeeper discovery (JRuby-only)
+#### Zookeeper discovery
 
 Discover Kafka brokers through zookeeper.  Looks at ```/brokers/ids``` in Zookeeper to find the list of brokers.
 
@@ -48,7 +48,8 @@ promise.state                          # the state of the promise
 ```ruby
 require 'hermann/producer'
 
-p = Hermann::Producer.new('topic', ['localhost:6667'])  # arguments topic, list of brokers
+broker_ids_array = Hermann::Discovery::Zookeeper.new('localhost:2181').get_brokers
+p = Hermann::Producer.new('topic', broker_ids_array)  # arguments topic, list of brokers
 f = p.push('hello world from mri')
 f.state
 p.tick_reactor
