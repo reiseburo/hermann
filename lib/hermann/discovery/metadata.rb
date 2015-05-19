@@ -19,7 +19,7 @@ module Hermann
       #  :topics  => {"testtopic"=>[{:id=>0, :leader_id=>3, :replica_ids=>[3, 1],  :isr_ids=>[3, 1]}}}
       #
       def brokers
-        brokers_from_metadata(@internal.metadata("", TIMEOUT_MS))
+        brokers_from_metadata(@internal.metadata(nil, TIMEOUT_MS))
       end
 
       def topics(filter_topics = nil)
