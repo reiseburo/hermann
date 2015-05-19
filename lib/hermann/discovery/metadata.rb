@@ -7,10 +7,11 @@ module Hermann
       Topic     = Struct.new(:name, :partitions)
       Partition = Struct.new(:id, :leader, :replicas, :insync_replicas)
 
-      TIMEOUT_MS = 200
-      def initialize(brokers)
+      DEFAULT_TIMEOUT_MS = 2_000
+      def initialize(brokers, options = {})
         raise "this is an MRI api only!" if Hermann.jruby?
         @internal = Hermann::Lib::Producer.new(brokers)
+        @timeout = options[:timeout] || DEFAULT_TIMEOUT_MS
       end
 
       #
@@ -19,11 +20,11 @@ module Hermann
       #  :topics  => {"testtopic"=>[{:id=>0, :leader_id=>3, :replica_ids=>[3, 1],  :isr_ids=>[3, 1]}}}
       #
       def brokers
-        brokers_from_metadata(@internal.metadata(nil, TIMEOUT_MS))
+        brokers_from_metadata(@internal.metadata(nil, @timeout))
       end
 
       def topics(filter_topics = nil)
-        md = @internal.metadata(filter_topics, TIMEOUT_MS)
+        md = @internal.metadata(filter_topics, @timeout)
 
         broker_hash = brokers_from_metadata(md).inject({}) do |h, broker|
           h[broker.id] = broker
