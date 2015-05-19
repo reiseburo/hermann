@@ -49,9 +49,9 @@ promise.state                          # the state of the promise
 require 'hermann/producer'
 
 p = Hermann::Producer.new('topic', ['localhost:6667'])  # arguments topic, list of brokers
-f = p.push('hello world from mri')                    
-f.state                                               
-p.tick_reactor                                        
+f = p.push('hello world from mri')
+f.state
+p.tick_reactor
 f.state
 ```
 
@@ -94,8 +94,18 @@ the_consumer.consume(new_topic) do |msg|   # can change topic with optional argu
 end
 ```
 
+### Metadata request (MRI-only)
 
+Topic and cluster metadata may be retrieved in the MRI version by querying the Kafka brokers.
 
+```ruby
+require 'hermann'
+require 'hermann/discovery/metadata'
+
+c = Hermann::Discovery::Metadata.new( "localhost:9092" )
+puts c.get_topics.inspect
+puts c.get_topics("only_this_topic").inspect
+```
 
 
 

@@ -778,7 +778,7 @@ static VALUE producer_metadata_make_hash(struct rd_kafka_metadata *data)
 
 		for ( j = 0 ; j < data->topics[i].partition_cnt ; j++ ) {
 			VALUE partition_hash = rb_hash_new();
-			rd_kafka_metadata_partition_t *partition = &(data->topics[i].partitions[i]);
+			rd_kafka_metadata_partition_t *partition = &(data->topics[i].partitions[j]);
 
 			/* id => 1, leader_id => 0 */
 			rb_hash_aset(partition_hash, ID2SYM(rb_intern("id")), INT2FIX(partition->id));
