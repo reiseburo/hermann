@@ -15,7 +15,7 @@ describe 'producer', :platform => :java  do
   let(:timeout) { 10 }
   let(:message)   { 'msg' }
   let(:consumer) do
-    Hermann::Consumer.new(topic, "rspec-group", zookeepers)
+    Hermann::Consumer.new(topic, { :group_id => "rspec-group", :zookeepers => zookeepers })
   end
   let(:consumer_promise) do
     Concurrent::Promise.execute do

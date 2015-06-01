@@ -50,9 +50,9 @@ require 'hermann/producer'
 
 broker_ids_array = Hermann::Discovery::Zookeeper.new('localhost:2181').get_brokers
 p = Hermann::Producer.new('topic', broker_ids_array)  # arguments topic, list of brokers
-f = p.push('hello world from mri')                    
-f.state                                               
-p.tick_reactor                                        
+f = p.push('hello world from mri')
+f.state
+p.tick_reactor
 f.state
 ```
 
@@ -95,9 +95,11 @@ the_consumer.consume(new_topic) do |msg|   # can change topic with optional argu
 end
 ```
 
+#### Testing
 
-
-
+To run the integration tests:
+ * startup your own instance of zookeeper/kafka
+ * `rspec spec/integration/producer_spec.rb`
 
 
 #### How to convert from using jruby-kafka
