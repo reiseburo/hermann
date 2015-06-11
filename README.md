@@ -114,6 +114,11 @@ end
 
 ```
 
+#### Testing
+
+To run the integration tests:
+ * startup your own instance of zookeeper/kafka
+ * `rspec spec/integration/producer_spec.rb`
 
 
 #### How to convert from using jruby-kafka
