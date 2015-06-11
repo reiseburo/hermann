@@ -104,8 +104,14 @@ require 'hermann'
 require 'hermann/discovery/metadata'
 
 c = Hermann::Discovery::Metadata.new( "localhost:9092" )
-puts c.get_topics.inspect
-puts c.get_topics("only_this_topic").inspect
+topic = c.topic("topic")
+
+puts topic.partitions.first
+
+consumers = topic.partitions.map do |partition|
+  partition.consumer
+end
+
 ```
 
 
