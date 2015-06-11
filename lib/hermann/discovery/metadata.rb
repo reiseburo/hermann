@@ -3,7 +3,12 @@ require 'hermann_lib'
 module Hermann
   module Discovery
     class Metadata
-      Broker    = Struct.new(:id, :host, :port)
+      Broker    = Struct.new(:id, :host, :port) do
+        def to_s
+          "#{host}:#{port}"
+        end
+      end
+
       Topic     = Struct.new(:name, :partitions)
       Partition = Struct.new(:id, :leader, :replicas, :insync_replicas)
 
