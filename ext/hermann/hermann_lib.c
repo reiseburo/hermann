@@ -725,6 +725,7 @@ static VALUE producer_connect(VALUE self, VALUE timeout) {
 
 	md_context.rk = producerConfig->rk;
 	md_context.topic = NULL;
+	md_context.data = NULL;
 	md_context.timeout_ms = rb_num2int(timeout);
 
 	err = producer_metadata_request(&md_context);
@@ -742,7 +743,8 @@ static VALUE producer_connect(VALUE self, VALUE timeout) {
 		producerConfig->isErrored = err;
 	}
 
-	rd_kafka_metadata_destroy(md_context.data);
+	if ( md_context.data )
+		rd_kafka_metadata_destroy(md_context.data);
 
 	return result;
 }
