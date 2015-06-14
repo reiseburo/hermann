@@ -259,6 +259,7 @@ static void msg_consume(rd_kafka_message_t *rkmessage, HermannInstanceConfig *cf
 	// Yield the data to the Consumer's block
 	if (rb_block_given_p()) {
 		VALUE value = rb_str_new((char *)rkmessage->payload, rkmessage->len);
+		rd_kafka_message_destroy(rkmessage);
 		rb_yield(value);
 	}
 	else {
@@ -412,7 +413,6 @@ static void consumer_consume_loop(HermannInstanceConfig* consumerConfig) {
 
 		if ( msg ) {
 			msg_consume(msg, consumerConfig);
-			rd_kafka_message_destroy(msg);
 		}
 	}
 }
