@@ -389,11 +389,15 @@ static void *consumer_recv_msg(void *ptr)
  * after every message, to see if the ruby interpreter wants us to exit the
  * loop.
  *
- * @param   HermannInstanceConfig* The hermann configuration for this consumer
+ * @param   self The consumer instance
  */
 
-static void consumer_consume_loop(HermannInstanceConfig* consumerConfig) {
+static VALUE consumer_consume_loop(VALUE self) {
+	HermannInstanceConfig* consumerConfig;
 	rd_kafka_message_t *msg;
+
+	Data_Get_Struct(self, HermannInstanceConfig, consumerConfig);
+
 	TRACER("\n");
 
 	while (consumerConfig->run) {
@@ -415,6 +419,21 @@ static void consumer_consume_loop(HermannInstanceConfig* consumerConfig) {
 			msg_consume(msg, consumerConfig);
 		}
 	}
+
+	return Qnil;
+}
+
+
+/**
+ * consumer_consume_loop_stop
+ *
+ * called when we're done with the .consume() loop.  lets rdkafa cleanup some internal structures
+ */
+static VALUE consumer_consume_loop_stop(VALUE self) {
+	HermannInstanceConfig* consumerConfig;
+	Data_Get_Struct(self, HermannInstanceConfig, consumerConfig);
+
+	rd_kafka_consume_stop(consumerConfig->rkt, consumerConfig->partition);
 }
 
 /**
@@ -451,12 +470,7 @@ static VALUE consumer_consume(VALUE self, VALUE topic) {
 		return Qnil;
 	}
 
-  consumer_consume_loop(consumerConfig);
-
-	/* Stop consuming */
-	rd_kafka_consume_stop(consumerConfig->rkt, consumerConfig->partition);
-
-	return Qnil;
+	return rb_ensure(consumer_consume_loop, self, consumer_consume_loop_stop, self);
 }
 
 
