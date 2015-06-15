@@ -122,10 +122,9 @@ class RdKafkaRecipe < MiniPortile
 end
 ################################################################################
 
-librdkafka = RdKafkaRecipe.new('librdkafka', '0.8.4')
+librdkafka = RdKafkaRecipe.new('librdkafka', '0.8.6')
 librdkafka.files = ["https://github.com/edenhill/librdkafka/archive/#{librdkafka.version}.tar.gz"]
-librdkafka.checksum = '28a3252fd0f31d4a38bea9cd25083a06'
-librdkafka.patch_files = Dir["#{File.join(BASE_DIR, 'ext', 'patches', 'librdkafka')}/*.patch"]
+librdkafka.checksum = '1b77543f9be82d3f700c0ef98f494990'
 checkpoint = ".librdkafka.#{librdkafka.version}.cooked"
 
 unless File.exists?(checkpoint)
