@@ -95,6 +95,25 @@ the_consumer.consume(new_topic) do |msg|   # can change topic with optional argu
 end
 ```
 
+### Metadata request (MRI-only)
+
+Topic and cluster metadata may be retrieved in the MRI version by querying the Kafka brokers.
+
+```ruby
+require 'hermann'
+require 'hermann/discovery/metadata'
+
+c = Hermann::Discovery::Metadata.new( "localhost:9092" )
+topic = c.topic("topic")
+
+puts topic.partitions.first
+
+consumers = topic.partitions.map do |partition|
+  partition.consumer
+end
+
+```
+
 #### Testing
 
 To run the integration tests:
