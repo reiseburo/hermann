@@ -5,8 +5,8 @@ rvm:
 - 1.9.3
 - jruby
 - ree
-deploy:
-  provider: rubygems
-  gemspec: hermann.gemspec
-  api_key:
-    secure: NQDoSKjV0bs2MSZHHwP6gsG3a8JXCCT5nCHiggTvVV2vvFS9WCyBtMDY3WxQzAU/Zbt+FcPobOvbd53HW5hQYkDOpc84j/utVyBBZCtew0wjEY+Z18ygr+oUQtoALoaRh+cr3MUEFA1Q68fsLlzpRH4M6ZQxbUNOQtwNHgLaZco=
+#deploy:
+#  provider: rubygems
+#  gemspec: hermann.gemspec
+#  api_key:
+#    secure: NQDoSKjV0bs2MSZHHwP6gsG3a8JXCCT5nCHiggTvVV2vvFS9WCyBtMDY3WxQzAU/Zbt+FcPobOvbd53HW5hQYkDOpc84j/utVyBBZCtew0wjEY+Z18ygr+oUQtoALoaRh+cr3MUEFA1Q68fsLlzpRH4M6ZQxbUNOQtwNHgLaZco=
