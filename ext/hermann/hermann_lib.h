@@ -113,4 +113,11 @@ typedef struct {
 	VALUE result;
 } hermann_push_ctx_t;
 
+typedef struct {
+	rd_kafka_t *rk;
+	rd_kafka_topic_t *topic;
+	struct rd_kafka_metadata *data;
+	int timeout_ms;
+} hermann_metadata_ctx_t;
+
 #endif
