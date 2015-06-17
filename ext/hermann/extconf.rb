@@ -147,6 +147,7 @@ $LOCAL_LIBS << File.join(librdkafka.path, 'lib', 'librdkafka.a')
 
 have_header('ruby/thread.h')
 have_header('ruby/intern.h')
+have_header('ruby/version.h')
 have_func('rb_thread_blocking_region')
 have_func('rb_thread_call_without_gvl')
 
