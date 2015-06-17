@@ -440,6 +440,7 @@ static VALUE consumer_consume_loop_stop(VALUE self) {
 	Data_Get_Struct(self, HermannInstanceConfig, consumerConfig);
 
 	rd_kafka_consume_stop(consumerConfig->rkt, consumerConfig->partition);
+  return Qnil;
 }
 
 /**
@@ -710,7 +711,7 @@ static void *producer_metadata_request_nogvl(void *ptr)
 	return (void *) rd_kafka_metadata(ctx->rk,
 			ctx->topic ? 0 : 1,
 			ctx->topic,
-			&(ctx->data),
+			(const struct rd_kafka_metadata **) &(ctx->data),
 			ctx->timeout_ms);
 }
 
@@ -719,7 +720,7 @@ static int producer_metadata_request(hermann_metadata_ctx_t *ctx)
 {
 	int err;
 
-#ifdef HAVE_RB_THREAD_BLOCKING_REGION
+#if HAVE_RB_THREAD_BLOCKING_REGION && RUBY_API_VERSION_MAJOR < 2
 	err = (int) rb_thread_blocking_region((rb_blocking_function_t *) producer_metadata_request_nogvl, ctx,
 				NULL, NULL);
 #elif HAVE_RB_THREAD_CALL_WITHOUT_GVL
