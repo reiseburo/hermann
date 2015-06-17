@@ -1,6 +1,5 @@
-require 'hermann'
-require 'concurrent'
 require 'json'
+require 'hermann'
 require 'hermann/errors'
 
 module Hermann

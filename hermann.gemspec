@@ -24,10 +24,12 @@ Gem::Specification.new do |s|
   s.rubygems_version = '2.2.2'
   s.specification_version = 3 if s.respond_to?(:specification_version)
 
-  s.add_dependency 'concurrent-ruby', '~> 0.7.0'
+  s.add_dependency 'json', '~> 1.8.2'
   s.add_dependency 'thread_safe', '~> 0.3.4'
 
   if RUBY_PLATFORM == "java"
+    s.add_dependency 'concurrent-ruby', '~> 0.7.0'
+
     # IMPORTANT: make sure that jar-dependencies is only a development
     # dependency of your gem. if it is a runtime dependencies the require_jars
     # file will be overwritten during installation.
