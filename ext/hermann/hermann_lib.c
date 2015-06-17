@@ -32,7 +32,10 @@
 /* Much of the librdkafka library calls were lifted from rdkafka_example.c */
 
 #include "hermann_lib.h"
+
+#ifdef HAVE_RUBY_VERSION_H
 #include <ruby/version.h>
+#endif
 
 /* how long to let librdkafka block on the socket before returning back to the interpreter.
  * essentially defines how long we wait before consumer_consume_stop_callback() can fire */
