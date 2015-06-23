@@ -151,4 +151,4 @@ have_header('ruby/version.h')
 have_func('rb_thread_blocking_region')
 have_func('rb_thread_call_without_gvl')
 
-create_makefile('hermann/hermann_lib')
+create_makefile('hermann/hermann_rdkafka')
