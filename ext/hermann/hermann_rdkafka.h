@@ -1,5 +1,5 @@
 /*
- * hermann_lib.h - Ruby wrapper for the librdkafka library
+ * hermann_rdkafka.h - Ruby wrapper for the librdkafka library
  *
  * Copyright (c) 2014 Stan Campbell
  * Copyright (c) 2014 Lookout, Inc.
@@ -107,7 +107,7 @@ typedef struct HermannInstanceConfig {
 typedef HermannInstanceConfig hermann_conf_t;
 
 typedef struct {
-	/* Hermann::Lib::Producer */
+	/* Hermann::Provider::RDKafka::Producer */
 	hermann_conf_t *producer;
 	/* Hermann::Result */
 	VALUE result;

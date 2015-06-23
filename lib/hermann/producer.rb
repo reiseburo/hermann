@@ -6,7 +6,7 @@ require 'hermann/result'
 if RUBY_PLATFORM == "java"
   require 'hermann/provider/java_producer'
 else
-  require 'hermann_lib'
+  require 'hermann_rdkafka'
 end
 
 module Hermann
@@ -23,7 +23,7 @@ module Hermann
       if Hermann.jruby?
         @internal = Hermann::Provider::JavaProducer.new(brokers.join(','), opts)
       else
-        @internal = Hermann::Lib::Producer.new(brokers.join(','))
+        @internal = Hermann::Provider::RDKafka::Producer.new(brokers.join(','))
       end
       # We're tracking children so we can make sure that at Producer exit we
       # make a reasonable attempt to clean up outstanding result objects

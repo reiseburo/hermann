@@ -6,7 +6,7 @@ require 'rake/extensiontask'
 
 
 Rake::ExtensionTask.new do |t|
-  t.name = 'hermann_lib'
+  t.name = 'hermann_rdkafka'
   t.ext_dir = 'ext/hermann'
   t.gem_spec = Gem::Specification.load('hermann.gemspec')
 end

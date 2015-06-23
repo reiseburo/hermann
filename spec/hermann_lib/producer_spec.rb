@@ -1,13 +1,13 @@
 require 'spec_helper'
 
-describe 'Hermann::Lib::Producer', :platform => :mri do
+describe 'Hermann::Provider::RDKafka::Producer', :platform => :mri do
   before :all do
-    require 'hermann_lib'
+    require 'hermann_rdkafka'
   end
 
   let(:topic) { 'rspec' }
   let(:brokers) { 'localhost:1337' }
-  subject(:producer) { Hermann::Lib::Producer.new(brokers) }
+  subject(:producer) { Hermann::Provider::RDKafka::Producer.new(brokers) }
   let(:timeout) { 3000 }
 
   it { should respond_to :push_single }

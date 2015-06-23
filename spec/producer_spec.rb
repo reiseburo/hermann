@@ -11,10 +11,11 @@ describe Hermann::Producer do
   describe '#initialize' do
     context 'with C ruby', :platform => :mri do
       it 'joins broker array' do
-        expect(Hermann::Lib::Producer).to receive(:new).with(brokers.first)
+        expect(Hermann::Provider::RDKafka::Producer).to receive(:new).with(brokers.first)
         expect(producer).to be_a Hermann::Producer
       end
     end
+
     context 'with Java', :platform => :java do
       it 'joins broker array' do
         expect(Hermann::Provider::JavaProducer).to receive(:new).with(brokers.first, opts)
@@ -190,7 +191,7 @@ describe Hermann::Producer do
 
     describe '#tick_reactor' do
       let(:timeout) { 0 }
-      let(:internal) { double('Hermann::Lib::Producer mock') }
+      let(:internal) { double('Hermann::Provider::RDKafka::Producer mock') }
       subject(:tick) { producer.tick_reactor(timeout) }
 
       before :each do

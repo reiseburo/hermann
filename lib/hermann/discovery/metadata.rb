@@ -1,4 +1,4 @@
-require 'hermann_lib'
+require 'hermann_rdkafka'
 require 'hermann/consumer'
 
 module Hermann
@@ -20,7 +20,7 @@ module Hermann
       DEFAULT_TIMEOUT_MS = 2_000
       def initialize(brokers, options = {})
         raise "this is an MRI api only!" if Hermann.jruby?
-        @internal = Hermann::Lib::Producer.new(brokers)
+        @internal = Hermann::Provider::RDKafka::Producer.new(brokers)
         @timeout = options[:timeout] || DEFAULT_TIMEOUT_MS
       end
 
