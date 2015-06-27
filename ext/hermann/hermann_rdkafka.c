@@ -1,5 +1,5 @@
 /*
- * hermann_lib.c - Ruby wrapper for the librdkafka library
+ * hermann_rdkafka.c - Ruby wrapper for the librdkafka library
  *
  * Copyright (c) 2014 Stan Campbell
  * Copyright (c) 2014 Lookout, Inc.
@@ -31,7 +31,7 @@
 
 /* Much of the librdkafka library calls were lifted from rdkafka_example.c */
 
-#include "hermann_lib.h"
+#include "hermann_rdkafka.h"
 
 #ifdef HAVE_RUBY_VERSION_H
 #include <ruby/version.h>
@@ -444,7 +444,7 @@ static VALUE consumer_consume_loop_stop(VALUE self) {
 }
 
 /**
- * Hermann::Lib::Consumer.consume
+ * Hermann::Provider::RDKafka::Consumer.consume
  *
  * @param   VALUE   self	the Ruby object for this consumer
  * @param   VALUE   topic	the Ruby string representing a topic to consume
@@ -1190,21 +1190,21 @@ static VALUE producer_init_copy(VALUE copy,
 }
 
 /**
- * Init_hermann_lib
+ * Init_hermann_rdkafka
  *
  * Called by Ruby when the Hermann gem is loaded.
  * Defines the Hermann module.
  * Defines the Producer and Consumer classes.
  */
-void Init_hermann_lib() {
-	VALUE lib_module, c_consumer, c_producer;
+void Init_hermann_rdkafka() {
+	VALUE lib_module, provider_module, c_consumer, c_producer;
 
-	TRACER("setting up Hermann::Lib\n");
+	TRACER("setting up Hermann::Provider::RDKafka\n");
 
 	/* Define the module */
 	hermann_module = rb_define_module("Hermann");
-	lib_module = rb_define_module_under(hermann_module, "Lib");
-
+	provider_module = rb_define_module_under(hermann_module, "Provider");
+	lib_module = rb_define_module_under(provider_module, "RDKafka");
 
 	/* ---- Define the consumer class ---- */
 	c_consumer = rb_define_class_under(lib_module, "Consumer", rb_cObject);

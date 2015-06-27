@@ -4,7 +4,7 @@ require 'hermann/errors'
 if Hermann.jruby?
   require 'hermann/provider/java_simple_consumer'
 else
-  require 'hermann_lib'
+  require 'hermann_rdkafka'
 end
 
 module Hermann
@@ -37,7 +37,7 @@ module Hermann
       else
         brokers, partition = require_values_at(opts, :brokers, :partition)
 
-        @internal = Hermann::Lib::Consumer.new(topic, brokers, partition, offset)
+        @internal = Hermann::Provider::RDKafka::Consumer.new(topic, brokers, partition, offset)
       end
     end
 
