@@ -269,10 +269,11 @@ static void msg_consume(rd_kafka_message_t *rkmessage, HermannInstanceConfig *cf
 		data = rb_str_new((char *)rkmessage->payload, rkmessage->len);
 		offset = rb_ll2inum(rkmessage->offset);
 
-		if ( rkmessage->key_len > 0 )
+		if ( rkmessage->key_len > 0 ) {
 			key = rb_str_new((char*) rkmessage->key, (int)rkmessage->key_len);
-		else
+		} else {
 			key = Qnil;
+		}
 
 		rd_kafka_message_destroy(rkmessage);
 		rb_yield_values(3, data, key, offset);
