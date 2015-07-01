@@ -90,8 +90,8 @@ new_topic = 'other_topic'
 
 the_consumer = Hermann::Consumer.new(topic, brokers: "localhost:9092", partition: 1)
 
-the_consumer.consume(new_topic) do |msg|   # can change topic with optional argument to .consume
-  puts "Recv: #{msg}"
+the_consumer.consume(new_topic) do |msg, key, offset|   # can change topic with optional argument to .consume
+  puts "Recv: #{msg}, key: #{key}, offset: #{offset}"
 end
 ```
 
