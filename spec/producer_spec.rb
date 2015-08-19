@@ -43,26 +43,26 @@ describe Hermann::Producer do
 
     context 'without topic passed' do
       it 'uses initialized topic' do
-        expect(producer.internal).to receive(:push_single).with(msg, topic, anything)
+        expect(producer.internal).to receive(:push_single).with(msg, topic, anything, anything)
         producer.push(msg)
       end
     end
     context 'without topic passed', :platform => :java do
       it 'uses initialized topic and does not have a partition key' do
-        expect(producer.internal).to receive(:push_single).with(msg, topic, nil)
+        expect(producer.internal).to receive(:push_single).with(msg, topic, nil, anything)
         producer.push(msg)
       end
     end
     context 'with topic passed' do
       it 'can change topic' do
-        expect(producer.internal).to receive(:push_single).with(msg, passed_topic, anything)
+        expect(producer.internal).to receive(:push_single).with(msg, passed_topic, anything, anything)
         producer.push(msg, :topic => passed_topic)
       end
 
       context 'and an array of messags' do
         it 'should propagate the topic' do
           messages = 3.times.map { |i| msg }
-          expect(producer.internal).to receive(:push_single).with(msg, passed_topic, anything).exactly(messages.size).times
+          expect(producer.internal).to receive(:push_single).with(msg, passed_topic, anything, anything).exactly(messages.size).times
           producer.push(messages, :topic => passed_topic)
         end
       end
@@ -70,7 +70,13 @@ describe Hermann::Producer do
 
     context 'with explicit partition key', :platform => :java do
       it 'uses the partition key' do
-        expect(producer.internal).to receive(:push_single).with(msg, topic, partition_key.to_java)
+        expect(producer.internal).to receive(:push_single).with(msg, topic, partition_key.to_java, anything)
+        producer.push(msg, :partition_key => partition_key)
+      end
+    end
+    context 'with explicit partition key', :platform => :mri do
+      it 'uses the partition key' do
+        expect(producer.internal).to receive(:push_single).with(msg, topic, partition_key, anything)
         producer.push(msg, :partition_key => partition_key)
       end
     end
@@ -178,7 +184,7 @@ describe Hermann::Producer do
 
         it 'should invoke #push_single for each element' do
           value.each do |v|
-            expect(producer.internal).to receive(:push_single).with(v, topic, anything)
+            expect(producer.internal).to receive(:push_single).with(v, topic, anything, anything)
           end
 
           expect(result).to be_instance_of Array

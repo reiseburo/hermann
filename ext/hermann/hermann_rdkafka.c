@@ -32,6 +32,7 @@
 /* Much of the librdkafka library calls were lifted from rdkafka_example.c */
 
 #include "hermann_rdkafka.h"
+#include "rdcrc32.h"
 
 #ifdef HAVE_RUBY_VERSION_H
 #include <ruby/version.h>
@@ -134,6 +135,16 @@ static void msg_delivered(rd_kafka_t *rk,
 	}
 }
 
+
+int32_t rd_kafka_msg_partitioner_consistent (const rd_kafka_topic_t *rkt,
+											 const void *key, size_t keylen,
+											 int32_t partition_cnt,
+											 void *rkt_opaque,
+											 void *msg_opaque) {
+	return rd_crc32(key, keylen) % partition_cnt;
+}
+
+
 /**
  * Producer partitioner callback.
  * Used to determine the target partition within a topic for production.
@@ -154,17 +165,11 @@ static int32_t producer_partitioner_callback(const rd_kafka_topic_t *rkt,
 											 int32_t partition_cnt,
 											 void *rkt_opaque,
 											 void *msg_opaque) {
-	/* Pick a random partition */
-	int retry = 0;
-	int32_t partition = RD_KAFKA_PARTITION_UA;
-
-	for (; retry < partition_cnt; retry++) {
-		partition = rand() % partition_cnt;
-		if (rd_kafka_topic_partition_available(rkt, partition)) {
-			break; /* this one will do */
-		}
+	if (keylen) {
+		return rd_kafka_msg_partitioner_consistent(rkt, keydata, keylen, partition_cnt, rkt_opaque, msg_opaque);
+	} else {
+		return rd_kafka_msg_partitioner_random(rkt, keydata, keylen, partition_cnt, rkt_opaque, msg_opaque);
 	}
-	return partition;
 }
 
 /**
@@ -589,10 +594,11 @@ void producer_init_kafka(VALUE self, HermannInstanceConfig* config) {
  *  @param  message VALUE   the ruby String containing the outgoing message.
  *  @param  topic   VALUE   the ruby String containing the topic to use for the
  *							outgoing message.
+ *  @param  key  VALUE   the ruby String containing the key to partition by
  *  @param  result  VALUE   the Hermann::Result object to be fulfilled when the
  *		push completes
  */
-static VALUE producer_push_single(VALUE self, VALUE message, VALUE topic, VALUE result) {
+static VALUE producer_push_single(VALUE self, VALUE message, VALUE topic, VALUE partition_key, VALUE result) {
 
 	HermannInstanceConfig* producerConfig;
 	/* Context pointer, pointing to `result`, for the librdkafka delivery
@@ -600,6 +606,7 @@ static VALUE producer_push_single(VALUE self, VALUE message, VALUE topic, VALUE 
 	 */
 	hermann_push_ctx_t *delivery_ctx = (hermann_push_ctx_t *)malloc(sizeof(hermann_push_ctx_t));
 	rd_kafka_topic_t *rkt = NULL;
+	rd_kafka_topic_conf_t *rkt_conf = NULL;
 
 	TRACER("self: %p, message: %p, result: %p)\n", self, message, result);
 
@@ -622,9 +629,15 @@ static VALUE producer_push_single(VALUE self, VALUE message, VALUE topic, VALUE 
 
 	TRACER("kafka initialized\n");
 
+	/* Topic configuration */
+	rkt_conf = rd_kafka_topic_conf_new();
+
+	/* Set the partitioner callback */
+	rd_kafka_topic_conf_set_partitioner_cb(rkt_conf, producer_partitioner_callback);
+
 	rkt = rd_kafka_topic_new(producerConfig->rk,
 								RSTRING_PTR(topic),
-								NULL);
+								rkt_conf);
 
 	if (NULL == rkt) {
 		rb_raise(rb_eRuntimeError, "Could not construct a topic structure");
@@ -645,8 +658,8 @@ static VALUE producer_push_single(VALUE self, VALUE message, VALUE topic, VALUE 
 						 RD_KAFKA_MSG_F_COPY,
 						 RSTRING_PTR(message),
 						 RSTRING_LEN(message),
-						 NULL,
-						 0,
+						 RSTRING_PTR(partition_key),
+						 RSTRING_LEN(partition_key),
 						 delivery_ctx)) {
 		fprintf(stderr, "%% Failed to produce to topic %s partition %i: %s\n",
 					rd_kafka_topic_name(producerConfig->rkt), producerConfig->partition,
@@ -1240,7 +1253,7 @@ void Init_hermann_rdkafka() {
 	rb_define_method(c_producer, "initialize_copy", producer_init_copy, 1);
 
 	/* Producer.push_single(msg) */
-	rb_define_method(c_producer, "push_single", producer_push_single, 3);
+	rb_define_method(c_producer, "push_single", producer_push_single, 4);
 
 	/* Producer.tick */
 	rb_define_method(c_producer, "tick", producer_tick, 1);

@@ -41,7 +41,7 @@ describe 'Hermann::Provider::RDKafka::Producer', :platform => :mri do
       let(:brokers) { 'localhost:13337' }
 
       it 'should error after attempting to connect' do |example|
-        producer.push_single(example.full_description, 'test-topic', nil)
+        producer.push_single(example.full_description, 'test-topic', '', nil)
         begin
           producer.tick(timeout)
         rescue StandardError => ex
@@ -62,7 +62,7 @@ describe 'Hermann::Provider::RDKafka::Producer', :platform => :mri do
 
   describe '#push_single', :type => :integration do
     let(:message) { |example| example.full_description }
-    subject(:push) { producer.push_single(message, topic, nil) }
+    subject(:push) { producer.push_single(message, topic, '', nil) }
 
     it 'should return' do
       expect(push).not_to be_nil
@@ -105,7 +105,7 @@ describe 'Hermann::Provider::RDKafka::Producer', :platform => :mri do
 
     context 'with a single queued request' do
       before :each do
-        producer.push_single('hello', topic, nil)
+        producer.push_single('hello', topic, '', nil)
       end
 
       it 'should return successfully' do
