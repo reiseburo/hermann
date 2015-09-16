@@ -68,13 +68,7 @@ describe Hermann::Producer do
       end
     end
 
-    context 'with explicit partition key', :platform => :java do
-      it 'uses the partition key' do
-        expect(producer.internal).to receive(:push_single).with(msg, topic, partition_key.to_java, anything)
-        producer.push(msg, :partition_key => partition_key)
-      end
-    end
-    context 'with explicit partition key', :platform => :mri do
+    context 'with explicit partition key' do
       it 'uses the partition key' do
         expect(producer.internal).to receive(:push_single).with(msg, topic, partition_key, anything)
         producer.push(msg, :partition_key => partition_key)

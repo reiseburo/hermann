@@ -63,8 +63,7 @@ module Hermann
       end
 
       if Hermann.jruby?
-        key = opts.has_key?(:partition_key) ? opts[:partition_key].to_java : nil
-        result = @internal.push_single(value, topic, key, nil)
+        result = @internal.push_single(value, topic, opts[:partition_key], nil)
         unless result.nil?
           @children << result
         end
