@@ -32,6 +32,10 @@
 /* Much of the librdkafka library calls were lifted from rdkafka_example.c */
 
 #include "hermann_rdkafka.h"
+
+/* This header file exposes the functions in librdkafka.a that are needed for
+ * consistent partitioning. After librdkafka releases a new tag and Hermann
+ * points to it, this can be removed. */
 #include "rdcrc32.h"
 
 #ifdef HAVE_RUBY_VERSION_H
@@ -136,6 +140,8 @@ static void msg_delivered(rd_kafka_t *rk,
 }
 
 
+/* This function is in rdkafka.h on librdkafka master. As soon as a new
+ * version is released and Hermann points to it, this can be removed. */
 int32_t rd_kafka_msg_partitioner_consistent (const rd_kafka_topic_t *rkt,
 											 const void *key, size_t keylen,
 											 int32_t partition_cnt,
