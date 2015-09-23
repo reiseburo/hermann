@@ -13,3 +13,4 @@ tmp/
 Gemfile.lock
 Jarfile.lock
 .jbundler/
+lib/hermann_jars.rb

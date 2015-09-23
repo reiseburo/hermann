@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
   s.homepage = 'https://github.com/lookout/Hermann'
   s.licenses = ['MIT']
 
-  s.files = [ "Rakefile"]
+  s.files = ['Rakefile']
   s.files += `git ls-files -- lib`.split($\)
   s.files += `git ls-files -- ext`.split($\)
 
@@ -28,6 +28,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'thread_safe', '~> 0.3.4'
 
   if RUBY_PLATFORM == "java"
+    s.files << 'lib/hermann_jars.rb'
     s.add_dependency 'concurrent-ruby', '~> 0.7.0'
 
     # IMPORTANT: make sure that jar-dependencies is only a development
