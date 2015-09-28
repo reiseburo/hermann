@@ -1,10 +1,16 @@
 language: ruby
+sudo: false
 rvm:
 - ruby-head
 - 2.1
 - 1.9.3
 - jruby
 - ree
+
+# upgrading bundler since our gemspec relying on lib/hermann_jars.rb being
+# present causes troubles with bundler .17.x
+before_install:
+    - gem install bundler -N --version ">= 1.8.0"
 #deploy:
 #  provider: rubygems
 #  gemspec: hermann.gemspec
