@@ -35,9 +35,9 @@ Gem::Specification.new do |s|
     # dependency of your gem. if it is a runtime dependencies the require_jars
     # file will be overwritten during installation.
     s.add_dependency 'jar-dependencies', ['~> 0.1', '>= 0.1.10']
-    s.requirements << "jar org.apache.kafka:kafka_2.10, ~>0.8.1.1"
+    s.requirements << "jar org.apache.kafka:kafka_2.11, ~> 0.8.2.2"
     # use log4j-1.2.16+ to as 1.2.15 declares deps which are not in maven central and causes the dep resolution to fail
-    s.requirements << "jar log4j:log4j, ~>1.2.16"
+    s.requirements << "jar log4j:log4j, ~> 1.2.16"
     s.require_paths = ["lib"]
     s.platform = 'java'
   else
