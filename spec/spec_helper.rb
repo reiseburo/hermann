@@ -2,6 +2,13 @@ require 'rubygems'
 require 'yaml'
 require 'rspec'
 
+require 'simplecov'
+require 'simplecov-rcov'
+
+SimpleCov.start do
+  formatter = SimpleCov::Formatter::RcovFormatter
+end
+
 # Add ext/ to the load path so we can load `hermann_lib`
 $LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__) + '/../ext/'))
 $LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__) + '/../lib/'))

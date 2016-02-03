@@ -11,7 +11,6 @@ group :development do
   gem 'jar-dependencies', :platform => :jruby
   gem 'rake-compiler'
   gem 'pry'
-  gem 'ci_reporter_rspec'
 
   # Used for testing `zk` gem based functionality
   gem 'zk', '~> 1.9.4'
@@ -24,4 +23,8 @@ group :test do
   # Used for testing encoding protobufs in an out of Hermann in integration
   # tests
   gem 'protobuffy'
+
+  gem 'ci_reporter_rspec'
+  gem 'simplecov'
+  gem 'simplecov-rcov'
 end
