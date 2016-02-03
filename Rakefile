@@ -3,7 +3,7 @@ require 'fileutils'
 require "bundler/gem_tasks"
 require 'rspec/core/rake_task'
 require 'rake/extensiontask'
-
+require 'ci/reporter/rake/rspec'
 
 Rake::ExtensionTask.new do |t|
   t.name = 'hermann_rdkafka'
