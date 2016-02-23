@@ -29,7 +29,7 @@ Gem::Specification.new do |s|
 
   if RUBY_PLATFORM == "java"
     s.files << 'lib/hermann_jars.rb'
-    s.add_dependency 'concurrent-ruby', '~> 0.7.0'
+    s.add_dependency 'concurrent-ruby', '~> 1.0.0'
 
     # IMPORTANT: make sure that jar-dependencies is only a development
     # dependency of your gem. if it is a runtime dependencies the require_jars

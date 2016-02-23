@@ -102,7 +102,8 @@ module Hermann
         @children.each do |child|
           # Skip over any children that should already be reaped for other
           # reasons
-          next if child.completed?
+          next if (Hermann.jruby? ? child.fulfilled? : child.completed?)
+
           # Propagate errors to the remaining children
           child.internal_set_error(ex)
         end
@@ -118,7 +119,7 @@ module Hermann
       # Filter all children who are no longer pending/fulfilled
       total_children = @children.size
 
-      @children = @children.reject { |c| c.completed? }
+      @children = @children.reject { |c| Hermann.jruby? ? c.fulfilled? : c.completed? }
 
       return (total_children - children.size)
     end
