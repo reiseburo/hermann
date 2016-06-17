@@ -114,6 +114,14 @@ end
 
 ```
 
+#### Build & Unit Test 
+
+First time (from a clean repository): 
+`bundle install && bundle exec rake`
+
+Thereafter: 
+`bundle exec rake spec`
+
 #### Testing
 
 To run the integration tests:
