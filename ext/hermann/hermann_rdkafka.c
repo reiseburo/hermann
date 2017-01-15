@@ -139,18 +139,6 @@ static void msg_delivered(rd_kafka_t *rk,
 	}
 }
 
-
-/* This function is in rdkafka.h on librdkafka master. As soon as a new
- * version is released and Hermann points to it, this can be removed. */
-int32_t rd_kafka_msg_partitioner_consistent (const rd_kafka_topic_t *rkt,
-											 const void *key, size_t keylen,
-											 int32_t partition_cnt,
-											 void *rkt_opaque,
-											 void *msg_opaque) {
-	return rd_crc32(key, keylen) % partition_cnt;
-}
-
-
 /**
  * Producer partitioner callback.
  * Used to determine the target partition within a topic for production.
@@ -308,7 +296,7 @@ static void msg_consume(rd_kafka_message_t *rkmessage, HermannInstanceConfig *cf
  * @param fac	  char*	   something of which I am unaware
  * @param buf	  char*	   the log message
  */
-static void logger(const rd_kafka_t *rk,
+static void log_cb(const rd_kafka_t *rk,
 				   int level,
 				   const char *fac,
 				   const char *buf) {
@@ -345,8 +333,8 @@ void consumer_init_kafka(HermannInstanceConfig* config) {
 		rb_raise(rb_eRuntimeError, "%% Failed to create new consumer: %s\n", config->errstr);
 	}
 
-	/* Set logger */
-	rd_kafka_set_logger(config->rk, logger);
+	/* Set log callback */
+	rd_kafka_conf_set_log_cb(config->conf, log_cb);
 	rd_kafka_set_log_level(config->rk, LOG_DEBUG);
 
 	/* Add brokers */
@@ -570,8 +558,8 @@ void producer_init_kafka(VALUE self, HermannInstanceConfig* config) {
 		rb_raise(rb_eRuntimeError, "%% Failed to create new producer: %s\n", config->errstr);
 	}
 
-	/* Set logger */
-	rd_kafka_set_logger(config->rk, logger);
+	/* Set log_cb */
+	rd_kafka_conf_set_log_cb(config->conf, log_cb);
 	rd_kafka_set_log_level(config->rk, LOG_DEBUG);
 
 	if (rd_kafka_brokers_add(config->rk, config->brokers) == 0) {
