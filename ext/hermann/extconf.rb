@@ -33,15 +33,16 @@ class RdKafkaRecipe < MiniPortile
   # Overriding this from MiniPortile because it includes autoconf defaults that
   # don't apply to librdkafka's mklove-based configure script
   def configure_defaults
-    []
+    ['--disable-sasl']
   end
 
   def download_file(url, full_path, count=3)
     super(url, full_path, count)
 
     # Support some simple checksumming
-    unless Digest::MD5.hexdigest(File.read(full_path)) == checksum
-      raise 'Checksum error!'
+    file_checksum = Digest::MD5.hexdigest(File.read(full_path))
+    unless file_checksum == checksum
+      raise "Checksum error: #{file_checksum} did not match #{checksum}"
     end
   end
 
@@ -122,9 +123,9 @@ class RdKafkaRecipe < MiniPortile
 end
 ################################################################################
 
-librdkafka = RdKafkaRecipe.new('librdkafka', '0.8.6')
+librdkafka = RdKafkaRecipe.new('librdkafka', 'v0.9.2')
 librdkafka.files = ["https://github.com/edenhill/librdkafka/archive/#{librdkafka.version}.tar.gz"]
-librdkafka.checksum = '1b77543f9be82d3f700c0ef98f494990'
+librdkafka.checksum = 'f2cc5ca6a149928c3cb34398379a5024'
 checkpoint = ".librdkafka.#{librdkafka.version}.cooked"
 
 unless File.exists?(checkpoint)

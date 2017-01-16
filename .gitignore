@@ -13,6 +13,7 @@ tmp/
 Gemfile.lock
 Jarfile.lock
 .jbundler/
+lib/hermann_rdkafka.bundle
 lib/hermann_jars.rb
 coverage/
 spec/reports
