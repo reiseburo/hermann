@@ -27,4 +27,3 @@ On mac :
 * ```bundle install```
 * ```rake default``` or ```rake compile``` and then ```rake spec```
 * ```rake spec:intregration```
-
